@@ -126,10 +126,11 @@ test('user memilih kurir wajib memilih kab/kota, kec/kel, kode pos dan alamat le
 });
 
 test('admin dapat mengelola tarif ongkir kurir', function () {
-    // Tambah tarif
+    // Tambah tarif dengan pricing_type flat
     $storeRes = $this->actingAs($this->admin)->post('/admin/kurir/tarif', [
         'city_name' => 'Depok',
         'shipping_cost' => 20000,
+        'pricing_type' => 'flat',
         'estimated_delivery' => '2-3 jam',
         'is_active' => true,
     ]);
@@ -137,14 +138,16 @@ test('admin dapat mengelola tarif ongkir kurir', function () {
     $this->assertDatabaseHas('shipping_rates', [
         'city_name' => 'Depok',
         'shipping_cost' => 20000.00,
+        'pricing_type' => 'flat',
     ]);
 
     $rate = ShippingRate::where('city_name', 'Depok')->first();
 
-    // Update tarif
+    // Update tarif ke per_kg
     $updateRes = $this->actingAs($this->admin)->put("/admin/kurir/tarif/{$rate->id}", [
         'city_name' => 'Depok Kota',
         'shipping_cost' => 22000,
+        'pricing_type' => 'per_kg',
         'estimated_delivery' => '1-2 jam',
         'is_active' => true,
     ]);
@@ -153,6 +156,7 @@ test('admin dapat mengelola tarif ongkir kurir', function () {
         'id' => $rate->id,
         'city_name' => 'Depok Kota',
         'shipping_cost' => 22000.00,
+        'pricing_type' => 'per_kg',
     ]);
 
     // Hapus tarif
@@ -160,5 +164,150 @@ test('admin dapat mengelola tarif ongkir kurir', function () {
     $deleteRes->assertRedirect();
     $this->assertDatabaseMissing('shipping_rates', [
         'id' => $rate->id,
+    ]);
+});
+
+test('checkout kurir dengan total berat kurang dari 1 kg tetap dihitung 1 kg', function () {
+    $lightProduct = Product::create([
+        'store_id' => $this->store->id,
+        'name' => 'Kerupuk Kaleng',
+        'slug' => 'kerupuk-kaleng',
+        'price' => '10000.00',
+        'stock' => 50,
+        'weight' => 250, // 250 gram
+        'is_active' => true,
+    ]);
+
+    CartItem::create([
+        'user_id' => $this->user->id,
+        'product_id' => $lightProduct->id,
+        'quantity' => 2, // 2 * 250g = 500g (< 1 kg)
+    ]);
+
+    $response = $this->actingAs($this->user)->post("/checkout/{$this->store->slug}", [
+        'delivery_type' => 'courier',
+        'recipient_name' => 'Budi Santoso',
+        'recipient_phone' => '081234567890',
+        'shipping_rate_id' => $this->shippingRate->id, // 15000 / kg
+        'shipping_district' => 'Kebayoran Baru',
+        'shipping_postal_code' => '12110',
+        'shipping_address' => 'Jl. Senopati No. 45',
+    ]);
+
+    $response->assertRedirect();
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $this->user->id,
+        'delivery_type' => 'courier',
+        'total_weight' => 500,
+        'shipping_cost' => 15000.00, // Dihitung 1 kg (1 * 15000)
+        'total_amount' => 20000.00,
+        'final_amount' => 35000.00, // 20000 + 15000
+    ]);
+});
+
+test('checkout kurir dengan total berat lebih dari 1 kg dihitung kelipatannya (ceil)', function () {
+    $heavyProduct = Product::create([
+        'store_id' => $this->store->id,
+        'name' => 'Beras Organik',
+        'slug' => 'beras-organik',
+        'price' => '30000.00',
+        'stock' => 50,
+        'weight' => 700, // 700 gram
+        'is_active' => true,
+    ]);
+
+    CartItem::create([
+        'user_id' => $this->user->id,
+        'product_id' => $heavyProduct->id,
+        'quantity' => 2, // 2 * 700g = 1400g (1.4 kg => dibulatkan 2 kg)
+    ]);
+
+    $response = $this->actingAs($this->user)->post("/checkout/{$this->store->slug}", [
+        'delivery_type' => 'courier',
+        'recipient_name' => 'Budi Santoso',
+        'recipient_phone' => '081234567890',
+        'shipping_rate_id' => $this->shippingRate->id, // 15000 / kg
+        'shipping_district' => 'Kebayoran Baru',
+        'shipping_postal_code' => '12110',
+        'shipping_address' => 'Jl. Senopati No. 45',
+    ]);
+
+    $response->assertRedirect();
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $this->user->id,
+        'delivery_type' => 'courier',
+        'total_weight' => 1400,
+        'shipping_cost' => 30000.00, // 2 kg * 15000 = 30000
+        'total_amount' => 60000.00,
+        'final_amount' => 90000.00, // 60000 + 30000
+    ]);
+});
+
+test('checkout kurir dengan tarif flat tidak terpengaruh oleh berat belanjaan', function () {
+    $flatRate = ShippingRate::create([
+        'city_name' => 'Bandung Flat',
+        'shipping_cost' => '25000.00',
+        'pricing_type' => 'flat',
+        'estimated_delivery' => '1 hari',
+        'is_active' => true,
+    ]);
+
+    $heavyProduct = Product::create([
+        'store_id' => $this->store->id,
+        'name' => 'Minyak Goreng Jirigen',
+        'slug' => 'minyak-goreng-jirigen',
+        'price' => '50000.00',
+        'stock' => 50,
+        'weight' => 5000, // 5000 gram (5 kg)
+        'is_active' => true,
+    ]);
+
+    CartItem::create([
+        'user_id' => $this->user->id,
+        'product_id' => $heavyProduct->id,
+        'quantity' => 2, // 10 kg
+    ]);
+
+    $response = $this->actingAs($this->user)->post("/checkout/{$this->store->slug}", [
+        'delivery_type' => 'courier',
+        'recipient_name' => 'Budi Santoso',
+        'recipient_phone' => '081234567890',
+        'shipping_rate_id' => $flatRate->id,
+        'shipping_district' => 'Coblong',
+        'shipping_postal_code' => '40132',
+        'shipping_address' => 'Jl. Dago No. 100',
+    ]);
+
+    $response->assertRedirect();
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $this->user->id,
+        'delivery_type' => 'courier',
+        'total_weight' => 10000,
+        'shipping_cost' => 25000.00, // Tetap flat 25000
+        'total_amount' => 100000.00,
+        'final_amount' => 125000.00, // 100000 + 25000
+    ]);
+});
+
+test('admin dapat menyimpan produk dengan berat dalam satuan kg dan dikonversi ke gram', function () {
+    $response = $this->actingAs($this->admin)->post('/admin/produk', [
+        'store_id' => $this->store->id,
+        'name' => 'Gula Pasir 2.5 Kg',
+        'price' => 35000,
+        'stock' => 20,
+        'unit' => 'bungkus',
+        'weight' => 2.5,
+        'weight_unit' => 'kg',
+        'is_active' => true,
+    ]);
+
+    $response->assertRedirect('/admin/produk');
+
+    $this->assertDatabaseHas('products', [
+        'name' => 'Gula Pasir 2.5 Kg',
+        'weight' => 2500, // 2.5 kg dikonversi jadi 2500 gram
     ]);
 });

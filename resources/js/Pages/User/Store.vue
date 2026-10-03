@@ -113,7 +113,10 @@ const add = (product) =>
                             / {{ p.unit }}
                         </span>
                     </p>
-                    <span class="text-xs font-medium text-[#f3f2e7]/60">Stok: {{ p.stock }}</span>
+                    <div class="text-right">
+                        <span class="block text-xs font-medium text-[#f3f2e7]/60">Stok: {{ p.stock }}</span>
+                        <span v-if="p.weight" class="text-[11px] text-[#f3f2e7]/50">⚖️ {{ Number(p.weight) >= 1000 ? (Number(p.weight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : p.weight + ' g' }}</span>
+                    </div>
                 </div>
                 <button
                     :disabled="p.stock < 1"

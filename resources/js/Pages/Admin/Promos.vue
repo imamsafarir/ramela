@@ -80,6 +80,7 @@ const input = "w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
         <table class="w-full text-left text-sm text-[#f3f2e7]">
             <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                 <tr>
+                    <th class="w-12 p-3.5 text-center">#</th>
                     <th class="p-3.5">Kode Promo</th>
                     <th class="p-3.5">Besaran Diskon</th>
                     <th class="p-3.5">Cakupan Scope</th>
@@ -89,7 +90,8 @@ const input = "w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0d685b]/20">
-                <tr v-for="p in promos" :key="p.id" class="hover:bg-[#131d1a]/50 transition">
+                <tr v-for="(p, idx) in promos" :key="p.id" class="hover:bg-[#131d1a]/50 transition">
+                    <td class="p-3.5 text-center font-bold text-xs text-[#f3f2e7]/50">{{ idx + 1 }}</td>
                     <td class="p-3.5 font-bold text-[#f3f2e7]">
                         {{ p.code }}
                         <span v-if="!p.is_active" class="ml-2 rounded bg-rose-950/40 border border-rose-500/30 px-1.5 py-0.5 text-[10px] text-rose-300">
@@ -115,7 +117,7 @@ const input = "w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
                     </td>
                 </tr>
                 <tr v-if="!promos.length">
-                    <td colspan="6" class="p-6 text-center text-sm text-[#f3f2e7]/60">🍃 Belum ada kupon promo yang dibuat.</td>
+                    <td colspan="7" class="p-6 text-center text-sm text-[#f3f2e7]/60">🍃 Belum ada kupon promo yang dibuat.</td>
                 </tr>
             </tbody>
         </table>

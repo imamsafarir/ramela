@@ -40,6 +40,7 @@ return new class extends Migration
             $table->decimal('price', 15, 2);
             $table->unsignedInteger('stock')->default(0);
             $table->string('unit', 20)->nullable();
+            $table->unsignedInteger('weight')->default(1000); // berat dalam gram
             $table->json('meta')->nullable(); // atribut khusus per toko (varian, spesifikasi, dll.)
             $table->boolean('is_active')->default(true);
             $table->timestamps();

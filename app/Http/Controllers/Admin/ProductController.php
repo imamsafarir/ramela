@@ -28,7 +28,7 @@ class ProductController extends Controller
             ->through(fn ($p) => [
                 'id' => $p->id, 'name' => $p->name, 'store' => $p->store->name,
                 'category' => $p->category?->name, 'price' => $p->price, 'stock' => $p->stock,
-                'unit' => $p->unit, 'is_active' => $p->is_active,
+                'unit' => $p->unit, 'weight' => $p->weight, 'is_active' => $p->is_active,
             ]);
 
         return Inertia::render('Admin/Products', [
@@ -84,7 +84,7 @@ class ProductController extends Controller
     {
         return Inertia::render('Admin/ProductForm', [
             'product' => $product ? [
-                ...$product->only('id', 'store_id', 'category_id', 'name', 'description', 'price', 'stock', 'unit', 'is_active'),
+                ...$product->only('id', 'store_id', 'category_id', 'name', 'description', 'price', 'stock', 'unit', 'weight', 'is_active'),
                 'images' => $product->images->map(fn ($i) => ['id' => $i->id, 'url' => asset('storage/'.$i->path)]),
             ] : null,
             'stores' => Store::orderBy('sort_order')->get(['id', 'name']),
@@ -102,11 +102,24 @@ class ProductController extends Controller
             'price' => ['required', 'numeric', 'min:0', 'max:999999999999'],
             'stock' => ['required', 'integer', 'min:0', 'max:1000000'],
             'unit' => ['nullable', 'string', 'max:20'],
+            'weight' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
+            'weight_unit' => ['nullable', 'string', 'in:g,kg'],
             'is_active' => ['required', 'boolean'],
             'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], // SVG sengaja tidak diizinkan (XSS)
         ]);
 
+        $rawWeight = $data['weight'] ?? null;
+        $weightUnit = $data['weight_unit'] ?? 'g';
+        if ($rawWeight !== null && (float) $rawWeight > 0) {
+            $data['weight'] = $weightUnit === 'kg'
+                ? (int) round(((float) $rawWeight) * 1000)
+                : (int) round((float) $rawWeight);
+        } else {
+            $data['weight'] = 1000;
+        }
+
+        unset($data['weight_unit']);
         unset($data['images']);
 
         return $data;

@@ -59,38 +59,93 @@ const input = 'rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 te
         <table class="w-full text-left text-sm text-[#f3f2e7]">
             <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                 <tr>
-                    <th class="px-4 py-3">Invoice</th>
-                    <th class="px-4 py-3">Toko</th>
-                    <th class="px-4 py-3">Pelanggan</th>
-                    <th class="px-4 py-3 cursor-pointer select-none" @click="sortBy('final_amount')">Total{{ arrow('final_amount') }}</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3 cursor-pointer select-none" @click="sortBy('created_at')">Waktu{{ arrow('created_at') }}</th>
+                    <th class="w-12 px-3 py-3.5 text-center">#</th>
+                    <th class="px-4 py-3.5">Invoice & Pengiriman</th>
+                    <th class="px-4 py-3.5">Toko & Pembeli</th>
+                    <th class="px-3 py-3.5 text-center">Total Berat</th>
+                    <th class="px-4 py-3.5 cursor-pointer select-none" @click="sortBy('final_amount')">
+                        Rincian Biaya & Promo{{ arrow('final_amount') }}
+                    </th>
+                    <th class="px-4 py-3.5 text-center">Status</th>
+                    <th class="px-4 py-3.5 cursor-pointer select-none" @click="sortBy('created_at')">Waktu{{ arrow('created_at') }}</th>
+                    <th class="px-4 py-3.5 text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0d685b]/20">
-                <tr v-for="o in orders.data" :key="o.invoice_number" class="hover:bg-[#131d1a]/50 transition">
-                    <td class="px-4 py-3">
-                        <div class="flex items-center gap-1.5">
-                            <Link :href="`/admin/pesanan/${o.invoice_number}`" class="font-bold text-[#f3f2e7] hover:text-emerald-400 underline transition">
-                                {{ o.invoice_number }}
-                            </Link>
-                            <span class="rounded px-1.5 py-0.5 text-[10px] font-bold" :class="o.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/40'">
-                                {{ o.delivery_type === 'pickup' ? 'Pickup' : 'Kurir' }}
+                <tr v-for="(o, idx) in orders.data" :key="o.invoice_number" class="hover:bg-[#131d1a]/50 transition">
+                    <td class="px-3 py-3.5 text-center font-bold text-xs text-[#f3f2e7]/50">
+                        {{ (orders.from || 1) + idx }}
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <Link :href="`/admin/pesanan/${o.invoice_number}`" class="font-bold text-[#f3f2e7] hover:text-emerald-400 underline transition block">
+                            {{ o.invoice_number }}
+                        </Link>
+                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                            <span class="rounded px-1.5 py-0.2 text-[10px] font-bold" :class="o.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/40'">
+                                {{ o.delivery_type === 'pickup' ? '🛵 Pickup Toko' : '🚚 Kurir Ekspedisi' }}
+                            </span>
+                            <span v-if="o.shipping_city" class="text-[11px] text-[#f3f2e7]/60">
+                                📍 {{ o.shipping_city }}
                             </span>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-xs text-[#f3f2e7]/80">{{ o.store }}</td>
-                    <td class="px-4 py-3 text-xs font-medium text-[#f3f2e7]">{{ o.username }}</td>
-                    <td class="px-4 py-3 font-semibold text-[#f3f2e7]">{{ rupiah(o.final_amount) }}</td>
-                    <td class="px-4 py-3">
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="statusClass(o.status)">
+                    <td class="px-4 py-3.5">
+                        <span class="font-bold text-xs text-[#f3f2e7] block">{{ o.store }}</span>
+                        <div class="text-[11px] text-[#f3f2e7]/70 mt-0.5">
+                            <span>@{{ o.username }}</span>
+                            <span v-if="o.recipient_name" class="text-[#f3f2e7]/50 block">Penerima: {{ o.recipient_name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-3 py-3.5 text-center">
+                        <span class="inline-block rounded-md bg-[#131d1a] border border-[#0d685b]/30 px-2 py-1 text-xs font-semibold text-[#f3f2e7]">
+                            ⚖️ {{ Number(o.total_weight) >= 1000 ? (Number(o.total_weight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : (o.total_weight || 0) + ' g' }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3.5 text-xs">
+                        <div class="space-y-0.5 text-[#f3f2e7]/70">
+                            <div class="flex items-center justify-between gap-3">
+                                <span>Produk:</span>
+                                <span>{{ rupiah(o.total_amount) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span>Ongkir:</span>
+                                <span>{{ Number(o.shipping_cost) > 0 ? rupiah(o.shipping_cost) : 'Rp 0' }}</span>
+                            </div>
+                            <div v-if="Number(o.discount_amount) > 0" class="flex items-center justify-between gap-3 text-emerald-400 font-semibold">
+                                <span class="flex items-center gap-1">
+                                    <span>Diskon</span>
+                                    <span v-if="o.promo_code" class="rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-bold border border-emerald-500/30">
+                                        {{ o.promo_code }}
+                                    </span>
+                                </span>
+                                <span>−{{ rupiah(o.discount_amount) }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-1.5 border-t border-[#0d685b]/20 pt-1 flex items-center justify-between font-bold text-sm">
+                            <span class="text-[11px] text-[#f3f2e7]/60">Total:</span>
+                            <span class="font-black text-emerald-400">{{ rupiah(o.final_amount) }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3.5 text-center">
+                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap" :class="statusClass(o.status)">
                             {{ o.status_label }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-xs text-[#f3f2e7]/60">{{ fmtDate(o.created_at) }}</td>
+                    <td class="px-4 py-3.5 text-xs text-[#f3f2e7]/60 whitespace-nowrap">
+                        {{ fmtDate(o.created_at) }}
+                    </td>
+                    <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                        <Link
+                            :href="`/admin/pesanan/${o.invoice_number}`"
+                            class="inline-flex items-center gap-1 rounded-lg border border-[#0d685b]/40 bg-[#131d1a] px-2.5 py-1.5 text-xs font-bold text-emerald-300 hover:bg-[#0d685b]/30 transition"
+                        >
+                            <span>Detail</span>
+                            <span>→</span>
+                        </Link>
+                    </td>
                 </tr>
                 <tr v-if="!orders.data.length">
-                    <td colspan="6" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">🍃 Tidak ada pesanan yang sesuai filter.</td>
+                    <td colspan="8" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">🍃 Tidak ada pesanan yang sesuai filter.</td>
                 </tr>
             </tbody>
         </table>

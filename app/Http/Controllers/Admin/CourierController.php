@@ -173,6 +173,7 @@ class CourierController extends Controller
         $data = $request->validate([
             'city_name' => ['required', 'string', 'max:255', 'unique:shipping_rates,city_name'],
             'shipping_cost' => ['required', 'numeric', 'min:0'],
+            'pricing_type' => ['nullable', 'string', 'in:per_kg,flat'],
             'estimated_delivery' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -180,8 +181,9 @@ class CourierController extends Controller
         ShippingRate::create([
             'city_name' => $data['city_name'],
             'shipping_cost' => $data['shipping_cost'],
+            'pricing_type' => $data['pricing_type'] ?? 'per_kg',
             'estimated_delivery' => $data['estimated_delivery'] ?? null,
-            'is_active' => $request->boolean('is_active', true),
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
         ]);
 
         return back()->with('success', 'Tarif ongkir kurir berhasil ditambahkan.');
@@ -192,6 +194,7 @@ class CourierController extends Controller
         $data = $request->validate([
             'city_name' => ['required', 'string', 'max:255', 'unique:shipping_rates,city_name,' . $rate->id],
             'shipping_cost' => ['required', 'numeric', 'min:0'],
+            'pricing_type' => ['nullable', 'string', 'in:per_kg,flat'],
             'estimated_delivery' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -199,8 +202,9 @@ class CourierController extends Controller
         $rate->update([
             'city_name' => $data['city_name'],
             'shipping_cost' => $data['shipping_cost'],
+            'pricing_type' => $data['pricing_type'] ?? $rate->pricing_type ?? 'per_kg',
             'estimated_delivery' => $data['estimated_delivery'] ?? null,
-            'is_active' => $request->boolean('is_active', true),
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $rate->is_active,
         ]);
 
         return back()->with('success', 'Tarif ongkir kurir berhasil diperbarui.');

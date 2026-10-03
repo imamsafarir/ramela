@@ -16,7 +16,7 @@ const lastUpdatedAt = ref(new Date());
 const refreshOrder = () => {
     isRefreshing.value = true;
     router.reload({
-        only: ['order'],
+        only: ["order"],
         preserveScroll: true,
         onFinish: () => {
             isRefreshing.value = false;
@@ -26,7 +26,7 @@ const refreshOrder = () => {
 };
 
 onMounted(() => {
-    if (props.order.status === 'shipping') {
+    if (props.order.status === "shipping") {
         pollTimer = setInterval(() => {
             refreshOrder();
         }, 4000);
@@ -41,11 +41,13 @@ onUnmounted(() => {
 const waLink = computed(() => {
     const phone = props.order.delivery?.courier_phone;
     if (!phone) return null;
-    let clean = phone.replace(/[^0-9]/g, '');
-    if (clean.startsWith('0')) {
-        clean = '62' + clean.slice(1);
+    let clean = phone.replace(/[^0-9]/g, "");
+    if (clean.startsWith("0")) {
+        clean = "62" + clean.slice(1);
     }
-    const msg = encodeURIComponent(`Halo ${props.order.delivery?.courier_name || 'Kurir'}, saya penerima pesanan ${props.order.invoice_number}. Mau menanyakan status pengantaran.`);
+    const msg = encodeURIComponent(
+        `Halo ${props.order.delivery?.courier_name || "Kurir"}, saya penerima pesanan ${props.order.invoice_number}. Mau menanyakan status pengantaran.`,
+    );
     return `https://wa.me/${clean}?text=${msg}`;
 });
 </script>
@@ -54,17 +56,24 @@ const waLink = computed(() => {
     <Head :title="order.invoice_number" />
 
     <div class="mb-4">
-        <Link href="/pesanan" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#f3f2e7]/70 hover:text-[#f3f2e7] transition">
+        <Link
+            href="/pesanan"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#f3f2e7]/70 hover:text-[#f3f2e7] transition"
+        >
             <span>←</span>
             <span>Kembali ke Semua Pesanan</span>
         </Link>
     </div>
 
     <!-- HEADER STATUS PESANAN -->
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30">
+    <div
+        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30"
+    >
         <div>
             <div class="flex items-center gap-2.5">
-                <h1 class="text-xl font-black text-[#f3f2e7]">{{ order.invoice_number }}</h1>
+                <h1 class="text-xl font-black text-[#f3f2e7]">
+                    {{ order.invoice_number }}
+                </h1>
                 <span
                     class="rounded-full px-2.5 py-0.5 text-xs font-bold"
                     :class="statusClass(order.status)"
@@ -73,15 +82,25 @@ const waLink = computed(() => {
                 </span>
             </div>
             <p class="mt-1 text-xs text-[#f3f2e7]/60">
-                Toko: <span class="font-semibold text-emerald-300">{{ order.store }}</span> · Waktu Pesan: {{ fmtDate(order.created_at) }}
+                Toko:
+                <span class="font-semibold text-emerald-300">{{
+                    order.store
+                }}</span>
+                · Waktu Pesan: {{ fmtDate(order.created_at) }}
             </p>
         </div>
 
         <div v-if="order.status === 'shipping'" class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-orange-950/40 px-3 py-1 text-xs font-bold text-orange-200 border border-orange-500/40">
+            <span
+                class="inline-flex items-center gap-1.5 rounded-full bg-orange-950/40 px-3 py-1 text-xs font-bold text-orange-200 border border-orange-500/40"
+            >
                 <span class="relative flex h-2 w-2">
-                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75"></span>
-                    <span class="relative inline-flex h-2 w-2 rounded-full bg-orange-500"></span>
+                    <span
+                        class="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75"
+                    ></span>
+                    <span
+                        class="relative inline-flex h-2 w-2 rounded-full bg-orange-500"
+                    ></span>
                 </span>
                 Sedang Diantar Kurir
             </span>
@@ -90,23 +109,36 @@ const waLink = computed(() => {
 
     <!-- KARTU UTAMA: LIVE TRACKING RUTE JALAN KURIR (KETIKA SHIPPING ATAU COMPLETED) -->
     <div
-        v-if="order.delivery && (order.status === 'shipping' || order.status === 'completed')"
+        v-if="
+            order.delivery &&
+            (order.status === 'shipping' || order.status === 'completed')
+        "
         class="mt-6 overflow-hidden rounded-2xl border-2 border-[#0d685b] bg-[#1c2a25] shadow-xl"
     >
         <!-- Bar Judul & Kontrol Live Tracking -->
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 bg-gradient-to-r from-[#131d1a] to-[#1a2d26] px-4 py-3.5 sm:px-5 sm:py-4">
+        <div
+            class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 bg-gradient-to-r from-[#131d1a] to-[#1a2d26] px-4 py-3.5 sm:px-5 sm:py-4"
+        >
             <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-[#f3f2e7] shadow-sm">
+                <div
+                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-[#f3f2e7] shadow-sm"
+                >
                     🛵
                 </div>
                 <div>
                     <h2 class="text-base font-bold text-[#f3f2e7]">
-                        {{ order.status === 'shipping' ? 'Pelacakan Pengantaran Realtime (Live Road Route)' : 'Riwayat Rute Pengantaran Kurir' }}
+                        {{
+                            order.status === "shipping"
+                                ? "Pelacakan Pengantaran Realtime (Live Road Route)"
+                                : "Riwayat Rute Pengantaran Kurir"
+                        }}
                     </h2>
                     <p class="text-xs text-[#f3f2e7]/70">
-                        {{ order.status === 'shipping'
-                            ? 'Pantau rute jalan raya dan pergerakan kurir langsung ke alamat tujuan Anda.'
-                            : 'Pesanan telah berhasil diantar ke lokasi tujuan oleh kurir.' }}
+                        {{
+                            order.status === "shipping"
+                                ? "Pantau rute jalan raya dan pergerakan kurir langsung ke alamat tujuan Anda."
+                                : "Pesanan telah berhasil diantar ke lokasi tujuan oleh kurir."
+                        }}
                     </p>
                 </div>
             </div>
@@ -122,23 +154,37 @@ const waLink = computed(() => {
                     @click="refreshOrder"
                 >
                     <span :class="{ 'animate-spin': isRefreshing }">🔄</span>
-                    <span>{{ isRefreshing ? 'Memperbarui...' : 'Perbarui Posisi' }}</span>
+                    <span>{{
+                        isRefreshing ? "Memperbarui..." : "Perbarui Posisi"
+                    }}</span>
                 </button>
             </div>
         </div>
 
         <!-- Info Kurir & Kontak Cepat -->
-        <div v-if="order.delivery.courier_name" class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/20 bg-[#1c2a25] px-5 py-3.5">
+        <div
+            v-if="order.delivery.courier_name"
+            class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/20 bg-[#1c2a25] px-5 py-3.5"
+        >
             <div class="flex items-center gap-3">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[#131d1a] border border-[#0d685b]/30 text-sm font-bold text-[#f3f2e7]">
+                <div
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-[#131d1a] border border-[#0d685b]/30 text-sm font-bold text-[#f3f2e7]"
+                >
                     👤
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs font-semibold text-[#f3f2e7]/70">Kurir Pengantar:</span>
-                        <span class="text-sm font-bold text-[#f3f2e7]">{{ order.delivery.courier_name }}</span>
+                        <span class="text-xs font-semibold text-[#f3f2e7]/70"
+                            >Kurir Pengantar:</span
+                        >
+                        <span class="text-sm font-bold text-[#f3f2e7]">{{
+                            order.delivery.courier_name
+                        }}</span>
                     </div>
-                    <p v-if="order.delivery.courier_phone" class="text-xs text-[#f3f2e7]/60">
+                    <p
+                        v-if="order.delivery.courier_phone"
+                        class="text-xs text-[#f3f2e7]/60"
+                    >
                         Telp: {{ order.delivery.courier_phone }}
                     </p>
                 </div>
@@ -180,8 +226,13 @@ const waLink = computed(() => {
         </div>
 
         <!-- Foto Bukti Pickup & Dropoff Validasi -->
-        <div v-if="order.delivery.photos?.length" class="border-t border-[#0d685b]/20 bg-[#131d1a]/50 p-5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/80 mb-3">
+        <div
+            v-if="order.delivery.photos?.length"
+            class="border-t border-[#0d685b]/20 bg-[#131d1a]/50 p-5"
+        >
+            <h3
+                class="text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/80 mb-3"
+            >
                 📷 Foto Bukti Validasi Pengantaran
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -192,11 +243,21 @@ const waLink = computed(() => {
                 >
                     <div class="flex items-center justify-between pb-2 text-xs">
                         <span class="font-bold text-[#f3f2e7]">
-                            {{ p.type === 'pickup' ? '📦 Bukti Barang Diambil di Toko' : '🏠 Bukti Diterima Pelanggan' }}
+                            {{
+                                p.type === "pickup"
+                                    ? "📦 Bukti Barang Diambil di Toko"
+                                    : "🏠 Bukti Diterima Pelanggan"
+                            }}
                         </span>
-                        <span class="text-[#f3f2e7]/60 text-[11px]">{{ fmtDate(p.taken_at) }}</span>
+                        <span class="text-[#f3f2e7]/60 text-[11px]">{{
+                            fmtDate(p.taken_at)
+                        }}</span>
                     </div>
-                    <a :href="p.url" target="_blank" class="group block overflow-hidden rounded-lg border border-[#0d685b]/20">
+                    <a
+                        :href="p.url"
+                        target="_blank"
+                        class="group block overflow-hidden rounded-lg border border-[#0d685b]/20"
+                    >
                         <img
                             :src="p.url"
                             class="h-40 w-full object-cover transition duration-200 group-hover:scale-105"
@@ -211,8 +272,14 @@ const waLink = computed(() => {
     <!-- DETAIL ITEM & RINCIAN PENGIRIMAN -->
     <div class="mt-6 grid gap-6 md:grid-cols-2">
         <!-- Kolom Kiri: Rincian Pesanan & Pembayaran -->
-        <div class="rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30">
-            <h2 class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2">Rincian Item Belanja</h2>
+        <div
+            class="rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30"
+        >
+            <h2
+                class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2"
+            >
+                Rincian Item Belanja
+            </h2>
             <ul class="divide-y divide-[#0d685b]/20 text-sm">
                 <li
                     v-for="(d, i) in order.details"
@@ -220,10 +287,16 @@ const waLink = computed(() => {
                     class="flex items-center justify-between py-3"
                 >
                     <div>
-                        <p class="font-semibold text-[#f3f2e7]">{{ d.product_name }}</p>
-                        <p class="text-xs text-[#f3f2e7]/60">{{ d.quantity }} barang</p>
+                        <p class="font-semibold text-[#f3f2e7]">
+                            {{ d.product_name }}
+                        </p>
+                        <p class="text-xs text-[#f3f2e7]/60">
+                            {{ d.quantity }} barang
+                        </p>
                     </div>
-                    <span class="font-bold text-[#f3f2e7]">{{ rupiah(d.subtotal) }}</span>
+                    <span class="font-bold text-[#f3f2e7]">{{
+                        rupiah(d.subtotal)
+                    }}</span>
                 </li>
             </ul>
 
@@ -234,21 +307,41 @@ const waLink = computed(() => {
                         <dd>{{ rupiah(order.total_amount) }}</dd>
                     </div>
                     <div class="flex justify-between text-[#f3f2e7]/70">
-                        <dt>{{ order.delivery_type === 'pickup' ? 'Metode Pengiriman' : 'Ongkos Kirim Kurir' }}</dt>
-                        <dd :class="order.delivery_type === 'pickup' ? 'text-emerald-400 font-bold' : ''">
-                            {{ order.delivery_type === 'pickup' ? 'Gratis (Ambil Sendiri)' : rupiah(order.shipping_cost || 0) }}
+                        <dt>
+                            {{
+                                order.delivery_type === "pickup"
+                                    ? "Metode Pengiriman"
+                                    : "Ongkos Kirim Kurir"
+                            }}
+                        </dt>
+                        <dd
+                            :class="
+                                order.delivery_type === 'pickup'
+                                    ? 'text-emerald-400 font-bold'
+                                    : ''
+                            "
+                        >
+                            {{
+                                order.delivery_type === "pickup"
+                                    ? "Gratis (Ambil Sendiri)"
+                                    : rupiah(order.shipping_cost || 0)
+                            }}
                         </dd>
                     </div>
                     <div
                         v-if="Number(order.discount_amount) > 0"
                         class="flex justify-between font-semibold text-emerald-400"
                     >
-                        <dt>Diskon ({{ order.promo_code ?? 'Promo' }})</dt>
+                        <dt>Diskon ({{ order.promo_code ?? "Promo" }})</dt>
                         <dd>− {{ rupiah(order.discount_amount) }}</dd>
                     </div>
-                    <div class="flex justify-between border-t border-[#0d685b]/20 pt-2 text-base font-black text-[#f3f2e7]">
+                    <div
+                        class="flex justify-between border-t border-[#0d685b]/20 pt-2 text-base font-black text-[#f3f2e7]"
+                    >
                         <dt>Total Dibayar</dt>
-                        <dd class="text-emerald-400">{{ rupiah(order.final_amount) }}</dd>
+                        <dd class="text-emerald-400">
+                            {{ rupiah(order.final_amount) }}
+                        </dd>
                     </div>
                 </dl>
             </div>
@@ -257,31 +350,59 @@ const waLink = computed(() => {
         <!-- Kolom Kanan: Alamat Pengiriman & Riwayat Status -->
         <div class="space-y-6">
             <!-- Alamat Pengiriman / Pengambilan -->
-            <div class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30">
-                <div class="flex items-center justify-between border-b border-[#0d685b]/20 pb-2 mb-3">
+            <div
+                class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30"
+            >
+                <div
+                    class="flex items-center justify-between border-b border-[#0d685b]/20 pb-2 mb-3"
+                >
                     <h2 class="text-base font-bold text-[#f3f2e7]">
-                        {{ order.delivery_type === 'pickup' ? 'Informasi Pengambilan' : 'Informasi Pengiriman' }}
+                        {{
+                            order.delivery_type === "pickup"
+                                ? "Informasi Pengambilan"
+                                : "Informasi Pengiriman"
+                        }}
                     </h2>
                     <span
                         class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-                        :class="order.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/50'"
+                        :class="
+                            order.delivery_type === 'pickup'
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/50'
+                        "
                     >
-                        {{ order.delivery_type === 'pickup' ? '🏪 Ambil Sendiri (Pickup)' : '🛵 Kirim via Kurir' }}
+                        {{
+                            order.delivery_type === "pickup"
+                                ? "🏪 Ambil Sendiri (Pickup)"
+                                : "🛵 Kirim via Kurir"
+                        }}
                     </span>
                 </div>
                 <div class="space-y-2 text-sm">
                     <p class="font-bold text-[#f3f2e7]">
                         {{ order.recipient_name }}
-                        <span class="font-normal text-[#f3f2e7]/60">({{ order.recipient_phone }})</span>
+                        <span class="font-normal text-[#f3f2e7]/60"
+                            >({{ order.recipient_phone }})</span
+                        >
                     </p>
 
                     <!-- Khusus Kurir: Tampilkan Kota, Kecamatan/Kelurahan, Kode Pos, Detail -->
-                    <div v-if="order.delivery_type === 'courier'" class="space-y-1 text-xs text-[#f3f2e7]/80">
-                        <p v-if="order.shipping_city" class="font-semibold text-emerald-400">
+                    <div
+                        v-if="order.delivery_type === 'courier'"
+                        class="space-y-1 text-xs text-[#f3f2e7]/80"
+                    >
+                        <p
+                            v-if="order.shipping_city"
+                            class="font-semibold text-emerald-400"
+                        >
                             Wilayah: {{ order.shipping_city }}
                         </p>
                         <p v-if="order.shipping_district">
-                            Kec/Kel: {{ order.shipping_district }} <span v-if="order.shipping_postal_code">· Kode Pos: {{ order.shipping_postal_code }}</span>
+                            Kec/Kel: {{ order.shipping_district }}
+                            <span v-if="order.shipping_postal_code"
+                                >· Kode Pos:
+                                {{ order.shipping_postal_code }}</span
+                            >
                         </p>
                         <p class="whitespace-pre-line leading-relaxed">
                             Detail: {{ order.shipping_address }}
@@ -289,26 +410,55 @@ const waLink = computed(() => {
                     </div>
 
                     <!-- Khusus Pickup: Tampilkan Info Pengambilan Toko -->
-                    <div v-else class="rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80">
-                        <p class="font-semibold text-emerald-300 mb-1">🏪 Lokasi Pengambilan: {{ order.store }}</p>
-                        <p class="text-[11px] text-[#f3f2e7]/60">Silakan tunjukkan nomor invoice ({{ order.invoice_number }}) kepada staf toko saat mengambil pesanan.</p>
+                    <div
+                        v-else
+                        class="rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80"
+                    >
+                        <p class="font-semibold text-emerald-300 mb-1">
+                            🏪 Lokasi Pengambilan: {{ order.store }}
+                        </p>
+                        <p class="text-[11px] text-[#f3f2e7]/60">
+                            Silakan tunjukkan nomor invoice ({{
+                                order.invoice_number
+                            }}) kepada staf toko saat mengambil pesanan.
+                        </p>
                     </div>
 
-                    <p v-if="order.delivery?.courier_name" class="mt-2 text-xs font-semibold text-emerald-300">
+                    <p
+                        v-if="order.delivery?.courier_name"
+                        class="mt-2 text-xs font-semibold text-emerald-300"
+                    >
                         Kurir Ditugaskan: {{ order.delivery.courier_name }}
                     </p>
-                    <p v-if="order.note" class="mt-2 rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80 italic">
+                    <p
+                        v-if="order.note"
+                        class="mt-2 rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80 italic"
+                    >
                         Catatan: "{{ order.note }}"
                     </p>
                 </div>
             </div>
 
             <!-- Status Timeline -->
-            <div class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30">
-                <h2 class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2">Riwayat Status Pesanan</h2>
-                <ol class="relative border-l border-[#0d685b]/40 pl-4 space-y-4 text-xs">
-                    <li v-for="(t, i) in order.timeline" :key="i" class="relative">
-                        <div class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-[#1c2a25] bg-[#0d685b] shadow-xs"></div>
+            <div
+                class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30"
+            >
+                <h2
+                    class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2"
+                >
+                    Riwayat Status Pesanan
+                </h2>
+                <ol
+                    class="relative border-l border-[#0d685b]/40 pl-4 space-y-4 text-xs"
+                >
+                    <li
+                        v-for="(t, i) in order.timeline"
+                        :key="i"
+                        class="relative"
+                    >
+                        <div
+                            class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-[#1c2a25] bg-[#0d685b] shadow-xs"
+                        ></div>
                         <span class="font-bold text-[#f3f2e7]">
                             {{ t.note ?? t.status }}
                         </span>

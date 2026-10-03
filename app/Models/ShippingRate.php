@@ -12,6 +12,7 @@ class ShippingRate extends Model
     protected $fillable = [
         'city_name',
         'shipping_cost',
+        'pricing_type',
         'estimated_delivery',
         'is_active',
     ];

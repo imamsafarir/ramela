@@ -119,6 +119,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-[11px] font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                         <tr>
+                            <th class="w-12 px-3 py-3.5 text-center">#</th>
                             <th class="px-5 py-3.5">Invoice & Waktu</th>
                             <th class="px-4 py-3.5">Toko & Pembeli</th>
                             <th class="px-4 py-3.5">Total Belanja</th>
@@ -127,7 +128,10 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#0d685b]/20">
-                        <tr v-for="t in transactions.data" :key="t.id" class="transition hover:bg-[#131d1a]/50">
+                        <tr v-for="(t, idx) in transactions.data" :key="t.id" class="transition hover:bg-[#131d1a]/50">
+                            <td class="px-3 py-4 text-center font-bold text-xs text-[#f3f2e7]/50">
+                                {{ (transactions.from || 1) + idx }}
+                            </td>
                             <td class="px-5 py-4">
                                 <Link :href="`/admin/pesanan/${t.invoice_number}`" class="font-bold text-emerald-400 hover:underline">
                                     {{ t.invoice_number }}
@@ -157,7 +161,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                             </td>
                         </tr>
                         <tr v-if="!transactions.data?.length">
-                            <td colspan="5" class="px-5 py-10 text-center text-xs text-[#f3f2e7]/50">
+                            <td colspan="6" class="px-5 py-10 text-center text-xs text-[#f3f2e7]/50">
                                 🍃 Tidak ada data transaksi yang ditemukan.
                             </td>
                         </tr>

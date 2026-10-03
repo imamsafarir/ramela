@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('city_name');
             $table->decimal('shipping_cost', 12, 2)->default(0);
+            $table->string('pricing_type', 20)->default('per_kg');
             $table->string('estimated_delivery')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

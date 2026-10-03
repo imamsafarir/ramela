@@ -415,6 +415,7 @@ onUnmounted(() => {
             <table class="w-full text-left text-sm text-[#f3f2e7]">
                 <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                     <tr>
+                        <th class="w-12 px-3 py-3 text-center">#</th>
                         <th class="px-4 py-3">Invoice</th>
                         <th class="px-4 py-3">Toko</th>
                         <th class="px-4 py-3">Penerima</th>
@@ -423,7 +424,8 @@ onUnmounted(() => {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#0d685b]/20">
-                    <tr v-for="h in history" :key="h.invoice_number" class="hover:bg-[#131d1a]/50 transition">
+                    <tr v-for="(h, idx) in history" :key="h.invoice_number" class="hover:bg-[#131d1a]/50 transition">
+                        <td class="px-3 py-3 text-center font-bold text-xs text-[#f3f2e7]/50">{{ idx + 1 }}</td>
                         <td class="px-4 py-3 font-semibold text-[#f3f2e7]">{{ h.invoice_number }}</td>
                         <td class="px-4 py-3 text-sm text-[#f3f2e7]/80">{{ h.store }}</td>
                         <td class="px-4 py-3 text-sm text-[#f3f2e7]/80">{{ h.recipient_name }}</td>

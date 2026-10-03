@@ -417,6 +417,7 @@ const walletTypeLabel = (type) => {
                 <table class="w-full text-left text-xs">
                     <thead>
                         <tr class="border-b border-[#0d685b]/20 text-[#f3f2e7]/60 uppercase tracking-wider text-[10px]">
+                            <th class="w-10 py-3 px-2 text-center font-bold">#</th>
                             <th class="py-3 px-2 font-bold">Jenis Mutasi</th>
                             <th class="py-3 px-2 font-bold">Keterangan</th>
                             <th class="py-3 px-2 font-bold">Waktu</th>
@@ -429,6 +430,9 @@ const walletTypeLabel = (type) => {
                             :key="w.id || i"
                             class="hover:bg-[#131d1a]/50 transition"
                         >
+                            <td class="py-3 px-2 text-center font-bold text-[#f3f2e7]/50 text-xs">
+                                {{ i + 1 }}
+                            </td>
                             <td class="py-3 px-2">
                                 <span
                                     class="inline-block rounded-md px-2 py-0.5 text-[11px] font-bold capitalize"

@@ -385,6 +385,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-[11px] font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                         <tr>
+                            <th class="w-12 px-3 py-3.5 text-center">#</th>
                             <th class="px-5 py-3.5">Pengguna</th>
                             <th class="px-4 py-3.5">Role</th>
                             <th class="px-4 py-3.5">Saldo Dompet</th>
@@ -396,7 +397,11 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[#0d685b]/20">
-                        <tr v-for="u in users.data" :key="u.id" class="transition hover:bg-[#131d1a]/50">
+                        <tr v-for="(u, idx) in users.data" :key="u.id" class="transition hover:bg-[#131d1a]/50">
+                            <!-- NOMOR URUT -->
+                            <td class="px-3 py-4 text-center font-bold text-xs text-[#f3f2e7]/50">
+                                {{ (users.from || 1) + idx }}
+                            </td>
                             <!-- PENGGUNA INFO -->
                             <td class="px-5 py-4">
                                 <div class="flex items-center gap-3">
@@ -534,7 +539,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                             </td>
                         </tr>
                         <tr v-if="!users.data?.length">
-                            <td :colspan="isSuperAdmin ? 7 : 6" class="px-5 py-12 text-center">
+                            <td :colspan="isSuperAdmin ? 8 : 7" class="px-5 py-12 text-center">
                                 <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#131d1a] border border-[#0d685b]/30 text-2xl">
                                     👤
                                 </div>

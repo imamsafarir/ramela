@@ -19,7 +19,7 @@ class CheckoutController extends Controller
 
         $items = $user->cartItems()
             ->whereHas('product', fn($q) => $q->where('store_id', $store->id))
-            ->with('product:id,name,price,unit,store_id')
+            ->with('product:id,name,price,unit,weight,store_id')
             ->get();
 
         if ($items->isEmpty()) {
@@ -43,17 +43,21 @@ class CheckoutController extends Controller
 
         $shippingRates = \App\Models\ShippingRate::where('is_active', true)
             ->orderBy('city_name')
-            ->get(['id', 'city_name', 'shipping_cost', 'estimated_delivery']);
+            ->get(['id', 'city_name', 'shipping_cost', 'pricing_type', 'estimated_delivery']);
+
+        $totalWeight = $items->sum(fn($i) => ($i->product->weight ?: 1000) * $i->quantity);
 
         return Inertia::render('User/Checkout', [
             'promo' => $promo,
             'promoError' => $promoError,
             'store' => $store->only('slug', 'name'),
             'shippingRates' => $shippingRates,
+            'totalWeight' => $totalWeight,
             'items' => $items->map(fn($i) => [
                 'name' => $i->product->name,
                 'quantity' => $i->quantity,
                 'price' => $i->product->price,
+                'weight' => $i->product->weight ?: 1000,
                 'subtotal' => bcmul((string) $i->product->price, (string) $i->quantity, 2),
             ]),
             'total' => $items->reduce(

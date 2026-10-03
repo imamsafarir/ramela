@@ -62,6 +62,12 @@ class CheckoutAction
                 $lines[] = [$product, $item->quantity, $subtotal];
             }
 
+            $totalWeight = 0;
+            foreach ($lines as [$product, $qty, $subtotal]) {
+                $pWeight = ($product->weight && $product->weight > 0) ? $product->weight : 1000;
+                $totalWeight += $pWeight * $qty;
+            }
+
             // Promo dievaluasi ulang di sini dengan row lock: pratinjau di halaman checkout bukan jaminan.
             $promo = null;
             $discount = '0.00';
@@ -73,13 +79,20 @@ class CheckoutAction
             }
 
             $deliveryType = $shipping['delivery_type'] ?? (isset($shipping['shipping_rate_id']) ? 'courier' : 'pickup');
+            $shippingPricingType = null;
 
             if ($deliveryType === 'courier') {
                 $rate = \App\Models\ShippingRate::where('is_active', true)->find($shipping['shipping_rate_id'] ?? null);
                 if (! $rate) {
                     throw new CheckoutException('Wilayah pengiriman tidak valid atau tarif kurir tidak aktif.');
                 }
-                $shippingCost = (string) $rate->shipping_cost;
+                $shippingPricingType = $rate->pricing_type ?? 'per_kg';
+                if ($shippingPricingType === 'flat') {
+                    $shippingCost = (string) $rate->shipping_cost;
+                } else {
+                    $billedKg = max(1, (int) ceil($totalWeight / 1000));
+                    $shippingCost = bcmul((string) $rate->shipping_cost, (string) $billedKg, 2);
+                }
                 $shippingCity = $rate->city_name;
                 $shippingDistrict = $shipping['shipping_district'] ?? null;
                 $shippingPostalCode = $shipping['shipping_postal_code'] ?? null;
@@ -113,6 +126,8 @@ class CheckoutAction
                 'promo_id' => $promo?->id,
                 'discount_amount' => $discount,
                 'shipping_cost' => $shippingCost,
+                'total_weight' => $totalWeight,
+                'shipping_pricing_type' => $shippingPricingType,
                 'final_amount' => $final,
                 'status' => OrderStatus::Pending,
                 'delivery_type' => $deliveryType,

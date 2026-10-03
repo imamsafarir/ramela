@@ -57,7 +57,9 @@ const remove = (p) => {
         <table class="w-full text-left text-sm text-[#f3f2e7]">
             <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                 <tr>
+                    <th class="w-12 px-3 py-3 text-center">#</th>
                     <th class="px-4 py-3">Nama Produk</th>
+                    <th class="px-4 py-3">Berat</th>
                     <th class="px-4 py-3">Toko</th>
                     <th class="px-4 py-3">Kategori</th>
                     <th class="px-4 py-3">Harga</th>
@@ -67,8 +69,21 @@ const remove = (p) => {
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0d685b]/20">
-                <tr v-for="p in products.data" :key="p.id" class="hover:bg-[#131d1a]/50 transition">
-                    <td class="px-4 py-3 font-bold text-[#f3f2e7]">{{ p.name }}</td>
+                <tr v-for="(p, idx) in products.data" :key="p.id" class="hover:bg-[#131d1a]/50 transition">
+                    <td class="px-3 py-3 text-center font-bold text-xs text-[#f3f2e7]/50">
+                        {{ (products.from || 1) + idx }}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-[#f3f2e7]">{{ p.name }}</div>
+                        <div v-if="p.description" class="text-[11px] text-[#f3f2e7]/40 truncate max-w-xs">
+                            {{ p.description }}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs font-medium text-[#f3f2e7] whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1 bg-[#131d1a] px-2.5 py-1 rounded-lg border border-[#0d685b]/30">
+                            ⚖️ {{ Number(p.weight) >= 1000 ? (Number(p.weight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : (p.weight || 1000) + ' g' }}
+                        </span>
+                    </td>
                     <td class="px-4 py-3 text-xs text-[#f3f2e7]/80">{{ p.store }}</td>
                     <td class="px-4 py-3 text-xs text-[#f3f2e7]/70">{{ p.category ?? '-' }}</td>
                     <td class="px-4 py-3 font-semibold text-[#f3f2e7]">
@@ -97,7 +112,7 @@ const remove = (p) => {
                     </td>
                 </tr>
                 <tr v-if="!products.data.length">
-                    <td colspan="7" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">🍃 Tidak ada produk ditemukan.</td>
+                    <td colspan="9" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">🍃 Tidak ada produk ditemukan.</td>
                 </tr>
             </tbody>
         </table>

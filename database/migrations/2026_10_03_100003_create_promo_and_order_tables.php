@@ -40,11 +40,18 @@ return new class extends Migration
             $table->decimal('total_amount', 15, 2);
             $table->foreignId('promo_id')->nullable()->constrained()->nullOnDelete();
             $table->decimal('discount_amount', 15, 2)->default(0);
+            $table->decimal('shipping_cost', 12, 2)->default(0);
+            $table->unsignedInteger('total_weight')->default(0);
+            $table->string('shipping_pricing_type', 20)->nullable();
             $table->decimal('final_amount', 15, 2);
             $table->string('status', 20)->default('pending'); // lihat App\Enums\OrderStatus
+            $table->string('delivery_type')->default('courier');
             // Snapshot alamat tujuan (tidak berubah walau alamat user diedit)
             $table->string('recipient_name');
             $table->string('recipient_phone', 20);
+            $table->string('shipping_city')->nullable();
+            $table->string('shipping_district')->nullable();
+            $table->string('shipping_postal_code')->nullable();
             $table->text('shipping_address');
             $table->decimal('shipping_latitude', 10, 7)->nullable();
             $table->decimal('shipping_longitude', 10, 7)->nullable();
@@ -80,6 +87,7 @@ return new class extends Migration
             $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
             $table->decimal('discount_amount', 15, 2);
             $table->timestamp('used_at')->useCurrent();
+            $table->timestamp('cancelled_at')->nullable();
             $table->index(['promo_id', 'user_id']);
         });
 

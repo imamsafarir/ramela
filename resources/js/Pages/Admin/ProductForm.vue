@@ -18,6 +18,8 @@ const form = useForm({
     price: props.product?.price ?? '',
     stock: props.product?.stock ?? 0,
     unit: props.product?.unit ?? '',
+    weight: props.product?.weight ? (props.product.weight >= 1000 && props.product.weight % 1000 === 0 ? props.product.weight / 1000 : props.product.weight) : 1000,
+    weight_unit: props.product?.weight && props.product.weight >= 1000 && props.product.weight % 1000 === 0 ? 'kg' : 'g',
     is_active: props.product?.is_active ?? true,
     images: [],
     remove_images: [],
@@ -75,7 +77,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
             <textarea v-model="form.description" rows="3" placeholder="Jelaskan detail spesifikasi produk..." :class="input" />
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">Harga (Rp)</label>
                 <input v-model="form.price" type="number" min="0" step="any" :class="input" />
@@ -86,9 +88,38 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
                 <input v-model="form.stock" type="number" min="0" :class="input" />
                 <p v-if="form.errors.stock" class="mt-1 text-xs text-rose-400">{{ form.errors.stock }}</p>
             </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
             <div>
-                <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">Satuan</label>
-                <input v-model="form.unit" placeholder="porsi, paket, m³" :class="input" />
+                <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">Satuan Jual</label>
+                <input v-model="form.unit" placeholder="porsi, paket, pcs, box, botol..." :class="input" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">
+                    Berat Produk (Untuk Ongkir Kurir)
+                </label>
+                <div class="flex gap-2">
+                    <input
+                        v-model="form.weight"
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Contoh: 500 atau 1.5"
+                        :class="input"
+                    />
+                    <select
+                        v-model="form.weight_unit"
+                        class="w-36 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3 py-2.5 text-xs font-bold text-[#f3f2e7] focus:outline-none focus:border-[#0d685b]"
+                    >
+                        <option value="g">Gram (g)</option>
+                        <option value="kg">Kilogram (kg)</option>
+                    </select>
+                </div>
+                <p v-if="form.errors.weight" class="mt-1 text-xs text-rose-400">{{ form.errors.weight }}</p>
+                <p class="mt-1 text-[11px] text-[#f3f2e7]/50">
+                    Estimasi: {{ form.weight ? (form.weight_unit === 'kg' ? (Number(form.weight) * 1000).toLocaleString('id-ID') + ' g' : (Number(form.weight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg') : '-' }}
+                </p>
             </div>
         </div>
 

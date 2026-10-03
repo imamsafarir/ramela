@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 
@@ -55,8 +55,32 @@ const secrets = [
                 Pengaturan Sistem & Gateway
             </h1>
             <p class="mt-1 text-xs text-[#f3f2e7]/60 sm:text-sm">
-                Konfigurasi payment gateway Midtrans untuk isi saldo otomatis serta sakelar fitur publik website.
+                Konfigurasi payment gateway Midtrans untuk isi saldo otomatis, biaya pengiriman kurir, serta sakelar fitur publik website.
             </p>
+        </div>
+
+        <!-- PINTASAN PENGATURAN TARIF ONGKIR KAB/KOTA -->
+        <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b]/30 text-xl text-[#f3f2e7]">
+                        📍
+                    </span>
+                    <div>
+                        <h2 class="text-base font-black text-[#f3f2e7]">Tarif & Biaya Pengiriman Kurir (Kab/Kota)</h2>
+                        <p class="text-xs text-[#f3f2e7]/60">
+                            Atur daftar Kabupaten/Kota, biaya ongkir, estimasi waktu, dan status aktif pengantaran kurir.
+                        </p>
+                    </div>
+                </div>
+                <Link
+                    href="/admin/kurir?tab=rates"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0d685b] hover:bg-[#117c6d] px-4 py-2.5 text-xs font-black text-[#f3f2e7] shadow-sm transition active:scale-95 whitespace-nowrap"
+                >
+                    <span>Kelola Tarif Ongkir</span>
+                    <span>→</span>
+                </Link>
+            </div>
         </div>
 
         <form class="space-y-6" @submit.prevent="submit">

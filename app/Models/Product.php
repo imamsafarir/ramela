@@ -14,7 +14,7 @@ class Product extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'decimal:2', 'meta' => 'array', 'is_active' => 'boolean'];
+        return ['price' => 'decimal:2', 'meta' => 'array', 'is_active' => 'boolean', 'weight' => 'integer'];
     }
 
     public function store(): BelongsTo { return $this->belongsTo(Store::class); }

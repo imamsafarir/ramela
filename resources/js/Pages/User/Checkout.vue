@@ -10,6 +10,10 @@ const props = defineProps({
     store: Object,
     items: Array,
     total: String,
+    totalWeight: {
+        type: [Number, String],
+        default: 0,
+    },
     defaults: Object,
     promo: Object,
     promoError: String,
@@ -41,8 +45,14 @@ const selectedRate = computed(() => {
 });
 
 const shippingCost = computed(() => {
-    if (form.delivery_type !== "courier") return 0;
-    return selectedRate.value ? Number(selectedRate.value.shipping_cost) : 0;
+    if (form.delivery_type !== "courier" || !selectedRate.value) return 0;
+    const baseCost = Number(selectedRate.value.shipping_cost);
+    if (selectedRate.value.pricing_type === "flat") {
+        return baseCost;
+    }
+    const weightInGrams = Number(props.totalWeight) || 0;
+    const billedKg = Math.max(1, Math.ceil(weightInGrams / 1000));
+    return baseCost * billedKg;
 });
 
 const discountAmount = computed(() => (props.promo ? Number(props.promo.discount) : 0));
@@ -207,13 +217,13 @@ const input =
                             Kabupaten / Kota (Tarif Kurir Ditentukan Admin)
                         </label>
                         <span v-if="selectedRate" class="text-xs font-bold text-emerald-400">
-                            + {{ rupiah(selectedRate.shipping_cost) }}
+                            + {{ rupiah(shippingCost) }}
                         </span>
                     </div>
                     <select v-model="form.shipping_rate_id" :class="input">
                         <option value="" disabled>-- Pilih Kabupaten / Kota Tujuan --</option>
                         <option v-for="r in shippingRates" :key="r.id" :value="r.id">
-                            {{ r.city_name }} — {{ rupiah(r.shipping_cost) }} (Estimasi: {{ r.estimated_delivery || '1 Hari' }})
+                            {{ r.city_name }} — {{ rupiah(r.shipping_cost) }}{{ r.pricing_type === 'flat' ? ' (Flat)' : ' / kg' }} (Estimasi: {{ r.estimated_delivery || '1 Hari' }})
                         </option>
                     </select>
                     <p v-if="!shippingRates.length" class="mt-1 text-xs text-amber-300">
@@ -352,6 +362,13 @@ const input =
 
             <!-- RINCIAN KALKULASI HARGA -->
             <div class="mt-4 border-t border-[#0d685b]/20 pt-3 space-y-2 text-xs text-[#f3f2e7]/80">
+                <div class="flex justify-between">
+                    <span>Total Berat</span>
+                    <span class="font-semibold text-[#f3f2e7]">
+                        {{ Number(totalWeight) >= 1000 ? (Number(totalWeight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : Number(totalWeight) + ' g' }}
+                    </span>
+                </div>
+
                 <div class="flex justify-between">
                     <span>Subtotal Produk</span>
                     <span class="font-semibold text-[#f3f2e7]">{{ rupiah(productSubtotal) }}</span>

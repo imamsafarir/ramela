@@ -18,7 +18,9 @@ class Transaction extends Model
             'status' => OrderStatus::class,
             'total_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'shipping_cost' => 'decimal:2',
             'final_amount' => 'decimal:2',
+            'total_weight' => 'integer',
         ];
     }
 

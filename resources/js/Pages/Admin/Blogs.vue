@@ -129,6 +129,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
         <table class="w-full text-left text-sm text-[#f3f2e7]">
             <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                 <tr>
+                    <th class="w-12 px-3 py-3.5 text-center">#</th>
                     <th class="px-4 py-3.5">Artikel</th>
                     <th class="px-4 py-3.5">Pilar Layanan</th>
                     <th class="px-4 py-3.5">Penulis</th>
@@ -138,7 +139,8 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0d685b]/20">
-                <tr v-for="b in blogs" :key="b.id" class="hover:bg-[#131d1a]/50 transition">
+                <tr v-for="(b, idx) in blogs" :key="b.id" class="hover:bg-[#131d1a]/50 transition">
+                    <td class="px-3 py-3.5 text-center font-bold text-xs text-[#f3f2e7]/50">{{ idx + 1 }}</td>
                     <td class="px-4 py-3.5">
                         <div class="flex items-center gap-3">
                             <img v-if="b.thumbnail" :src="b.thumbnail" class="h-10 w-12 rounded-lg object-cover border border-[#0d685b]/30" />
@@ -173,7 +175,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
                     </td>
                 </tr>
                 <tr v-if="!blogs.length">
-                    <td colspan="6" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">
+                    <td colspan="7" class="px-4 py-8 text-center text-sm text-[#f3f2e7]/60">
                         🍃 Belum ada artikel blog yang ditulis.
                     </td>
                 </tr>

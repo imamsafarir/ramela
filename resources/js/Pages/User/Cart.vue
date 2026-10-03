@@ -17,6 +17,10 @@ const setQty = (item, qty) => {
 };
 const remove = (item) =>
     router.delete(`/keranjang/${item.id}`, { preserveScroll: true });
+
+const groupWeight = (items) => {
+    return items.reduce((sum, it) => sum + (Number(it.weight || 1000) * it.quantity), 0);
+};
 </script>
 
 <template>
@@ -62,9 +66,11 @@ const remove = (item) =>
             >
                 <div>
                     <p class="font-bold text-sm text-[#f3f2e7]">{{ i.name }}</p>
-                    <p class="text-xs text-[#f3f2e7]/70 mt-0.5">
-                        {{ rupiah(i.price) }}<span v-if="i.unit"> / {{ i.unit }}</span>
-                    </p>
+                    <div class="flex items-center gap-2 text-xs text-[#f3f2e7]/70 mt-0.5">
+                        <span>{{ rupiah(i.price) }}<span v-if="i.unit"> / {{ i.unit }}</span></span>
+                        <span class="text-[#f3f2e7]/30">·</span>
+                        <span class="text-[#f3f2e7]/60">⚖️ {{ Number(i.weight) >= 1000 ? (Number(i.weight) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : (i.weight || 1000) + ' g' }}</span>
+                    </div>
                     <p v-if="!i.available" class="text-xs font-bold text-rose-400 mt-1">
                         ⚠️ Produk tidak tersedia
                     </p>
@@ -103,7 +109,10 @@ const remove = (item) =>
         >
             <div>
                 <span class="block text-[11px] font-semibold text-[#f3f2e7]/60 uppercase tracking-wider">Subtotal Belanja</span>
-                <span class="font-black text-lg text-emerald-400">{{ rupiah(g.subtotal) }}</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-black text-lg text-emerald-400">{{ rupiah(g.subtotal) }}</span>
+                    <span class="text-xs text-[#f3f2e7]/60">· ⚖️ {{ groupWeight(g.items) >= 1000 ? (groupWeight(g.items) / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg' : groupWeight(g.items) + ' g' }}</span>
+                </div>
             </div>
             <Link
                 :href="`/checkout/${g.store.slug}`"

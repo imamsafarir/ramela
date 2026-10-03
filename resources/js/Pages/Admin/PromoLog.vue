@@ -23,6 +23,7 @@ defineProps({ promo: Object, logs: Array });
         <table class="w-full text-left text-sm text-[#f3f2e7]">
             <thead class="border-b border-[#0d685b]/30 bg-[#131d1a] text-xs font-bold uppercase tracking-wider text-[#f3f2e7]/70">
                 <tr>
+                    <th class="w-12 p-3.5 text-center">#</th>
                     <th class="p-3.5">Username</th>
                     <th class="p-3.5">Invoice Transaksi</th>
                     <th class="p-3.5">Nilai Diskon</th>
@@ -31,7 +32,8 @@ defineProps({ promo: Object, logs: Array });
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0d685b]/20">
-                <tr v-for="l in logs" :key="l.id" class="hover:bg-[#131d1a]/50 transition">
+                <tr v-for="(l, idx) in logs" :key="l.id" class="hover:bg-[#131d1a]/50 transition">
+                    <td class="p-3.5 text-center font-bold text-xs text-[#f3f2e7]/50">{{ idx + 1 }}</td>
                     <td class="p-3.5 font-bold text-[#f3f2e7]">{{ l.username }}</td>
                     <td class="p-3.5">
                         <Link :href="`/admin/pesanan/${l.invoice}`" class="font-bold text-emerald-400 hover:text-emerald-300 underline">
@@ -50,7 +52,7 @@ defineProps({ promo: Object, logs: Array });
                     </td>
                 </tr>
                 <tr v-if="!logs.length">
-                    <td colspan="5" class="p-6 text-center text-sm text-[#f3f2e7]/60">🍃 Belum ada riwayat pemakaian untuk kupon ini.</td>
+                    <td colspan="6" class="p-6 text-center text-sm text-[#f3f2e7]/60">🍃 Belum ada riwayat pemakaian untuk kupon ini.</td>
                 </tr>
             </tbody>
         </table>

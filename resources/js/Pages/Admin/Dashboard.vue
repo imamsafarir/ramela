@@ -71,6 +71,12 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
                     🛵 Kurir & Tracking
                 </Link>
                 <Link
+                    href="/admin/kurir?tab=rates"
+                    class="rounded-xl border border-[#0d685b]/30 bg-[#131d1a] px-3.5 py-2 text-xs font-bold text-[#f3f2e7] transition hover:bg-[#17231f] hover:border-[#0d685b]"
+                >
+                    📍 Tarif Ongkir (Kab/Kota)
+                </Link>
+                <Link
                     href="/admin/users"
                     class="rounded-xl border border-[#0d685b]/30 bg-[#131d1a] px-3.5 py-2 text-xs font-bold text-[#f3f2e7] transition hover:bg-[#17231f] hover:border-[#0d685b]"
                 >
