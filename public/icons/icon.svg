@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#17231f"/>
+      <stop offset="100%" stop-color="#0f1715"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d685b"/>
+      <stop offset="100%" stop-color="#149683"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background Rounded Rect -->
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  
+  <!-- Outer subtle glowing ring -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#0d685b" stroke-width="6" stroke-opacity="0.35"/>
+  
+  <!-- Inner badge -->
+  <circle cx="256" cy="256" r="160" fill="url(#brand)" filter="url(#shadow)"/>
+  
+  <!-- Stylized 'R' Monogram -->
+  <path d="M 190 140 L 275 140 C 325 140 355 165 355 205 C 355 240 330 265 290 270 L 360 372 L 310 372 L 246 276 L 232 276 L 232 372 L 190 372 Z M 232 178 L 232 238 L 270 238 C 298 238 313 226 313 208 C 313 190 298 178 270 178 Z" fill="#f3f2e7"/>
+
+  <!-- Accent small diamond / star for ecosystem -->
+  <polygon points="345,148 355,165 345,182 335,165" fill="#f3f2e7" opacity="0.9"/>
+</svg>
