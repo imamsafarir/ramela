@@ -61,7 +61,7 @@ const waLink = computed(() => {
     </div>
 
     <!-- HEADER STATUS PESANAN -->
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30">
         <div>
             <div class="flex items-center gap-2.5">
                 <h1 class="text-xl font-black text-[#f3f2e7]">{{ order.invoice_number }}</h1>
@@ -94,7 +94,7 @@ const waLink = computed(() => {
         class="mt-6 overflow-hidden rounded-2xl border-2 border-[#0d685b] bg-[#1c2a25] shadow-xl"
     >
         <!-- Bar Judul & Kontrol Live Tracking -->
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 bg-gradient-to-r from-[#131d1a] to-[#1a2d26] px-5 py-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 bg-gradient-to-r from-[#131d1a] to-[#1a2d26] px-4 py-3.5 sm:px-5 sm:py-4">
             <div class="flex items-center gap-3">
                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-[#f3f2e7] shadow-sm">
                     🛵
@@ -211,7 +211,7 @@ const waLink = computed(() => {
     <!-- DETAIL ITEM & RINCIAN PENGIRIMAN -->
     <div class="mt-6 grid gap-6 md:grid-cols-2">
         <!-- Kolom Kiri: Rincian Pesanan & Pembayaran -->
-        <div class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30">
+        <div class="rounded-2xl bg-[#1c2a25] p-4 sm:p-5 shadow-xl border border-[#0d685b]/30">
             <h2 class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2">Rincian Item Belanja</h2>
             <ul class="divide-y divide-[#0d685b]/20 text-sm">
                 <li

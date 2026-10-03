@@ -334,7 +334,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
             </div>
 
             <!-- FILTER ROLE DROPDOWN -->
-            <div class="w-40">
+            <div class="w-full sm:w-40">
                 <select v-model="roleFilter" :class="inputClass" @change="applyFilter()">
                     <option value="">Semua Role</option>
                     <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
@@ -342,7 +342,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
             </div>
 
             <!-- FILTER STATUS AKTIVITAS -->
-            <div class="w-44">
+            <div class="w-full sm:w-44">
                 <select v-model="statusFilter" :class="inputClass" @change="applyFilter()">
                     <option value="">Semua Aktivitas</option>
                     <option value="active">Pernah Login</option>
@@ -351,7 +351,7 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
             </div>
 
             <!-- URUTKAN -->
-            <div class="w-48">
+            <div class="w-full sm:w-48">
                 <select v-model="sortFilter" :class="inputClass" @change="applyFilter()">
                     <option value="latest">Terbaru Terdaftar</option>
                     <option value="oldest">Terlama Terdaftar</option>

@@ -23,8 +23,8 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
 <template>
     <div class="min-h-screen bg-[#17231f] text-[#f3f2e7] flex flex-col">
         <!-- HEADER TOP BAR (Sticky with Notch padding) -->
-        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe">
-            <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe">
+            <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
                 <!-- Brand & Desktop Nav -->
                 <div class="flex items-center gap-6">
                     <Link href="/dashboard" class="flex items-center gap-2 group">
@@ -111,7 +111,7 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
         </header>
 
         <!-- MAIN CONTENT CONTAINER -->
-        <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-6 sm:px-6 content-bottom-safe md:pb-10 px-safe">
+        <main class="flex-1 mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-6 content-bottom-safe md:pb-10">
             <div
                 v-if="flash"
                 class="mb-6 flex items-center justify-between rounded-2xl border border-[#0d685b] bg-[#0d685b]/30 px-4 py-3 text-sm font-semibold text-[#f3f2e7]"
@@ -125,7 +125,7 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
         </main>
 
         <!-- MOBILE BOTTOM NAVIGATION BAR -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 pt-2 bottom-nav-safe backdrop-blur-md md:hidden shadow-2xl px-safe">
+        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-2 pt-2 bottom-nav-safe backdrop-blur-md md:hidden shadow-2xl">
             <Link
                 href="/dashboard"
                 class="flex flex-col items-center gap-0.5 px-2 py-1 text-xs font-medium transition"

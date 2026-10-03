@@ -34,7 +34,7 @@ const input = "w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
     </div>
 
     <!-- FORM BUAT PROMO -->
-    <form class="mt-5 grid gap-3 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7] md:grid-cols-3" @submit.prevent="submit">
+    <form class="mt-5 grid gap-3 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-5 shadow-lg text-[#f3f2e7] md:grid-cols-3" @submit.prevent="submit">
         <div>
             <input v-model="form.code" placeholder="KODE KUPON (MISAL: DISKON50)" :class="input" />
             <p v-if="form.errors.code" class="mt-1 text-xs text-rose-400">{{ form.errors.code }}</p>

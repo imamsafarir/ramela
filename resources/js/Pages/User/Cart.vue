@@ -31,7 +31,7 @@ const remove = (item) =>
 
     <h1 class="text-2xl font-black text-[#f3f2e7] tracking-tight">Keranjang Belanja</h1>
 
-    <div v-if="!groups.length" class="mt-6 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-10 text-center text-sm text-[#f3f2e7]/60 shadow-xl">
+    <div v-if="!groups.length" class="mt-6 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 sm:p-10 text-center text-sm text-[#f3f2e7]/60 shadow-xl">
         <p class="text-4xl mb-2">🛒</p>
         <p class="font-bold text-[#f3f2e7] text-base mb-1">Keranjang Anda masih kosong</p>
         <p class="text-xs text-[#f3f2e7]/60 mb-4">Yuk jelajahi toko RAMELA dan pilih kebutuhan Anda.</p>
@@ -45,7 +45,7 @@ const remove = (item) =>
         :key="g.store.slug"
         class="mt-6 overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] shadow-xl"
     >
-        <header class="border-b border-[#0d685b]/20 bg-[#131d1a]/50 px-5 py-3.5 font-black text-sm text-[#f3f2e7] flex items-center justify-between">
+        <header class="border-b border-[#0d685b]/20 bg-[#131d1a]/50 px-4 py-3 sm:px-5 sm:py-3.5 font-black text-sm text-[#f3f2e7] flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span>🏪</span>
                 <span>{{ g.store.name }}</span>
@@ -58,7 +58,7 @@ const remove = (item) =>
             <li
                 v-for="i in g.items"
                 :key="i.id"
-                class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 hover:bg-[#131d1a]/30 transition"
+                class="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4 hover:bg-[#131d1a]/30 transition"
             >
                 <div>
                     <p class="font-bold text-sm text-[#f3f2e7]">{{ i.name }}</p>

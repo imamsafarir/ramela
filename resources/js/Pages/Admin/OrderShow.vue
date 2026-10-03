@@ -33,7 +33,7 @@ const apply = (a) => {
     <p class="text-xs text-[#f3f2e7]/60 mt-1">🏪 {{ order.store }} · 👤 {{ order.customer }} · 🕒 {{ fmtDate(order.created_at) }}</p>
 
     <!-- FORM TINDAKAN ADMIN -->
-    <div v-if="actions.length" class="mt-5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg">
+    <div v-if="actions.length" class="mt-5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg">
         <h3 class="text-xs font-bold uppercase tracking-wider text-[#0d685b] mb-2">Tindakan Admin</h3>
         <input
             v-model="form.note"
@@ -57,7 +57,7 @@ const apply = (a) => {
 
     <div class="mt-6 grid gap-6 md:grid-cols-2">
         <!-- DETAIL ITEM PESANAN -->
-        <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7]">
+        <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg text-[#f3f2e7]">
             <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d685b]">Daftar Item Pesanan</h2>
             <ul class="divide-y divide-[#0d685b]/20 text-sm">
                 <li v-for="(d, i) in order.details" :key="i" class="flex justify-between py-2.5">
@@ -102,7 +102,7 @@ const apply = (a) => {
                     />
                 </div>
 
-                <div v-if="order.delivery.photos?.length" class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7]">
+                <div v-if="order.delivery.photos?.length" class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg text-[#f3f2e7]">
                     <h2 class="mb-3 text-sm font-bold uppercase tracking-wider text-[#0d685b]">Foto Validasi Kurir</h2>
                     <div class="grid grid-cols-2 gap-4">
                         <div v-for="p in order.delivery.photos" :key="p.type" class="space-y-1">
@@ -119,7 +119,7 @@ const apply = (a) => {
             </div>
 
             <!-- INFORMASI PENGIRIMAN -->
-            <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7]">
+            <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg text-[#f3f2e7]">
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-[#0d685b]">
                         {{ order.delivery_type === 'pickup' ? 'Informasi Pengambilan' : 'Informasi Pengiriman' }}

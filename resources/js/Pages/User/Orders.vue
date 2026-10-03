@@ -27,7 +27,7 @@ defineProps({ orders: Object });
 
     <div
         v-if="!orders.data.length"
-        class="mt-6 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-10 text-center text-sm text-[#f3f2e7]/60 shadow-xl"
+        class="mt-6 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 sm:p-10 text-center text-sm text-[#f3f2e7]/60 shadow-xl"
     >
         <p class="text-4xl mb-2">🛍️</p>
         <p class="font-bold text-[#f3f2e7] text-base mb-1">
@@ -51,7 +51,7 @@ defineProps({ orders: Object });
         <li v-for="o in orders.data" :key="o.invoice_number">
             <Link
                 :href="`/pesanan/${o.invoice_number}`"
-                class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition hover:bg-[#131d1a]/50"
+                class="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5 sm:py-4 transition hover:bg-[#131d1a]/50"
             >
                 <div>
                     <div class="flex items-center gap-2">

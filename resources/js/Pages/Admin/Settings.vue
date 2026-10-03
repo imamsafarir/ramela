@@ -61,7 +61,7 @@ const secrets = [
 
         <form class="space-y-6" @submit.prevent="submit">
             <!-- SECTION PAYMENT GATEWAY MIDTRANS -->
-            <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 shadow-xl text-[#f3f2e7]">
+            <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
                 <div class="flex items-center justify-between border-b border-[#0d685b]/20 pb-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b]/30 text-xl text-[#f3f2e7]">
@@ -134,7 +134,7 @@ const secrets = [
             </div>
 
             <!-- SECTION FITUR PUBLIK -->
-            <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 shadow-xl text-[#f3f2e7]">
+            <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
                 <div class="flex items-center gap-3 border-b border-[#0d685b]/20 pb-4">
                     <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b]/30 text-xl text-[#f3f2e7]">
                         ⚡

@@ -39,8 +39,8 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
 <template>
     <div class="min-h-screen bg-[#17231f] text-[#f3f2e7]">
         <!-- HEADER ADMIN -->
-        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe">
-            <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe">
+            <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
                 <!-- Brand & Desktop Nav -->
                 <div class="flex items-center gap-5">
                     <Link href="/admin" class="flex items-center gap-2 group">
@@ -159,7 +159,7 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
         </header>
 
         <!-- MAIN BODY -->
-        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 content-bottom-safe xl:pb-10 px-safe">
+        <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 content-bottom-safe xl:pb-10">
             <div
                 v-if="flash"
                 class="mb-6 flex items-center justify-between rounded-2xl border border-[#0d685b] bg-[#0d685b]/30 px-4 py-3 text-sm font-semibold text-[#f3f2e7]"
@@ -173,7 +173,7 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
         </main>
 
         <!-- MOBILE BOTTOM NAVIGATION BAR (ADMIN) -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 pt-2 bottom-nav-safe backdrop-blur-md xl:hidden shadow-lg px-safe">
+        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-2 pt-2 bottom-nav-safe backdrop-blur-md xl:hidden shadow-lg">
             <Link
                 href="/admin"
                 class="flex flex-col items-center gap-0.5 px-2 py-1 text-xs font-medium transition"

@@ -37,12 +37,12 @@ const input = 'rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 te
     </div>
 
     <form class="mt-5 flex flex-wrap items-center gap-2.5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-3 shadow-lg" @submit.prevent="apply">
-        <input v-model="f.q" placeholder="Invoice / username..." :class="input" />
-        <select v-model="f.store" :class="input" @change="apply">
+        <input v-model="f.q" placeholder="Invoice / username..." :class="[input, 'w-full sm:w-auto']" />
+        <select v-model="f.store" :class="[input, 'w-full sm:w-auto']" @change="apply">
             <option value="">Semua toko</option>
             <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
-        <select v-model="f.status" :class="input" @change="apply">
+        <select v-model="f.status" :class="[input, 'w-full sm:w-auto']" @change="apply">
             <option value="">Semua status</option>
             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>

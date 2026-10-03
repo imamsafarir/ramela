@@ -20,7 +20,7 @@ const filterStore = (slug) => {
         <meta name="description" content="Kumpulan artikel edukatif, info promo, dan kabar terbaru seputar RAMELA EATS, RAMELA HAMPERS, dan RAMELA BETON." />
     </Head>
 
-    <main class="mx-auto max-w-6xl px-4 py-12">
+    <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
             <h1 class="text-3xl font-black tracking-tight text-[#f3f2e7] sm:text-4xl">Blog & Wawasan RAMELA</h1>
             <p class="mt-2 text-[#f3f2e7]/70">Berita promo, tips bermanfaat, dan edukasi seputar layanan kami.</p>

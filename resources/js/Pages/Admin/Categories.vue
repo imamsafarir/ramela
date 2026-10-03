@@ -25,20 +25,20 @@ const remove = (c) => {
     </div>
 
     <form class="mt-5 flex flex-wrap items-start gap-2.5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 shadow-lg" @submit.prevent="add">
-        <select v-model="form.store_id" class="rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-sm text-[#f3f2e7] focus:outline-none focus:border-[#0d685b]">
+        <select v-model="form.store_id" class="w-full sm:w-auto rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-sm text-[#f3f2e7] focus:outline-none focus:border-[#0d685b]">
             <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
-        <div>
+        <div class="w-full sm:w-auto">
             <input
                 v-model="form.name"
                 placeholder="Nama kategori baru..."
-                class="rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-sm text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:outline-none focus:border-[#0d685b]"
+                class="w-full sm:w-auto rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-sm text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:outline-none focus:border-[#0d685b]"
             />
             <p v-if="form.errors.name" class="mt-1 text-xs text-rose-400">{{ form.errors.name }}</p>
         </div>
         <button
             :disabled="form.processing"
-            class="rounded-xl bg-[#0d685b] px-4 py-2 text-xs font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 hover:bg-[#0d685b]/90 transition disabled:opacity-50"
+            class="w-full sm:w-auto rounded-xl bg-[#0d685b] px-4 py-2 text-xs font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 hover:bg-[#0d685b]/90 transition disabled:opacity-50"
         >
             + Tambah Kategori
         </button>

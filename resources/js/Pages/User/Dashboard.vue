@@ -42,7 +42,7 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
     <!-- HERO PROFILE & WALLET CARD -->
     <div class="grid gap-4 lg:grid-cols-3">
         <!-- Kartu Sapaan & Status Akun (2 Kolom di Desktop) -->
-        <div class="relative overflow-hidden rounded-3xl bg-[#1c2a25] p-6 shadow-xl border border-[#0d685b]/30 lg:col-span-2 flex flex-col justify-between">
+        <div class="relative overflow-hidden rounded-3xl bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl border border-[#0d685b]/30 lg:col-span-2 flex flex-col justify-between">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0d685b] to-emerald-600 text-lg font-black text-[#f3f2e7] shadow-md shadow-[#0d685b]/30">
@@ -99,7 +99,7 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
         </div>
 
         <!-- Kartu Saldo Digital Wallet (Mewah & Modern) -->
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#131d1a] via-[#1a2d26] to-[#0d685b]/40 p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40 flex flex-col justify-between">
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#131d1a] via-[#1a2d26] to-[#0d685b]/40 p-5 sm:p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40 flex flex-col justify-between">
             <!-- Background Glow Circle -->
             <div class="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-500/10 blur-2xl"></div>
 
@@ -138,7 +138,7 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
     <!-- WIDGET PANEL KONTROL ADMIN (INTEGRASI JIKA LOGIN SEBAGAI ADMIN / SUPER_ADMIN) -->
     <div
         v-if="isStaff"
-        class="mt-6 overflow-hidden rounded-3xl bg-gradient-to-r from-[#131d1a] via-[#1c2a25] to-[#131d1a] p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40"
+        class="mt-6 overflow-hidden rounded-3xl bg-gradient-to-r from-[#131d1a] via-[#1c2a25] to-[#131d1a] p-5 sm:p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40"
     >
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>

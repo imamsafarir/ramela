@@ -21,7 +21,7 @@ const toggle = (idx) => {
         <meta name="description" content="Temukan jawaban atas pertanyaan umum terkait pemesanan, pembayaran Midtrans, saldo, dan pengantaran kurir di RAMELA." />
     </Head>
 
-    <main class="mx-auto max-w-4xl px-4 py-12">
+    <main class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
             <h1 class="text-3xl font-black tracking-tight text-[#f3f2e7] sm:text-4xl">Pertanyaan yang Sering Diajukan</h1>
             <p class="mt-2 text-[#f3f2e7]/70">Punya pertanyaan seputar layanan RAMELA? Temukan jawabannya di bawah ini.</p>

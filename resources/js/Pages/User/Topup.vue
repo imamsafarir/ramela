@@ -110,7 +110,7 @@ const walletTypeLabel = (type) => {
     <div class="grid gap-6 md:grid-cols-3">
         <!-- Kartu Saldo Saat Ini -->
         <div
-            class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#131d1a] via-[#1a2d26] to-[#0d685b]/40 p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40 flex flex-col justify-between md:col-span-1"
+            class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#131d1a] via-[#1a2d26] to-[#0d685b]/40 p-4.5 sm:p-6 text-[#f3f2e7] shadow-xl border border-[#0d685b]/40 flex flex-col justify-between md:col-span-1"
         >
             <div class="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-500/10 blur-xl"></div>
             <div class="relative z-10">
@@ -139,7 +139,7 @@ const walletTypeLabel = (type) => {
         </div>
 
         <!-- Form Top-Up Nominal (2 Kolom di Desktop) -->
-        <div class="rounded-3xl bg-[#1c2a25] p-6 shadow-xl border border-[#0d685b]/30 md:col-span-2">
+        <div class="rounded-3xl bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl border border-[#0d685b]/30 md:col-span-2">
             <h1 class="text-lg font-black text-[#f3f2e7] sm:text-xl">Isi Saldo Dompet</h1>
             <p class="text-xs text-[#f3f2e7]/70 mt-0.5">
                 Pilih nominal atau masukkan jumlah isi saldo yang Anda inginkan.
@@ -213,7 +213,7 @@ const walletTypeLabel = (type) => {
     </div>
 
     <!-- BAGIAN RIWAYAT (MUTASI SALDO & TOP-UP) -->
-    <div class="mt-8 rounded-3xl bg-[#1c2a25] p-6 shadow-xl border border-[#0d685b]/30">
+    <div class="mt-8 rounded-3xl bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl border border-[#0d685b]/30">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[#0d685b]/20 pb-4">
             <div>
                 <h2 class="text-base font-black text-[#f3f2e7] sm:text-lg">Riwayat Aktivitas & Transaksi</h2>

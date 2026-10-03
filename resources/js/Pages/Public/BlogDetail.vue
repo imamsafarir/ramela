@@ -17,7 +17,7 @@ defineProps({
         <meta v-if="blog.thumbnail" property="og:image" :content="blog.thumbnail" />
     </Head>
 
-    <main class="mx-auto max-w-3xl px-4 py-12">
+    <main class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12">
         <Link href="/blog" class="text-sm font-bold text-emerald-400 hover:underline">← Kembali ke Semua Artikel</Link>
 
         <header class="mt-4">

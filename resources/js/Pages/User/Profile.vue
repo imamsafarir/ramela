@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import UserLayout from '../../Layouts/UserLayout.vue';
 
 defineOptions({ layout: UserLayout });
@@ -36,7 +36,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py
     <h1 class="text-2xl font-black text-[#f3f2e7] tracking-tight">Pengaturan Profil</h1>
 
     <div class="mt-6 grid gap-6 md:grid-cols-2">
-        <form class="space-y-4 rounded-2xl bg-[#1c2a25] p-6 border border-[#0d685b]/30 shadow-xl" @submit.prevent="saveProfile">
+        <form class="space-y-4 rounded-2xl bg-[#1c2a25] p-4.5 sm:p-6 border border-[#0d685b]/30 shadow-xl" @submit.prevent="saveProfile">
             <h2 class="text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-3">Data Diri</h2>
             <div>
                 <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80">Username</label>
@@ -63,7 +63,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py
             </button>
         </form>
 
-        <form class="space-y-4 rounded-2xl bg-[#1c2a25] p-6 border border-[#0d685b]/30 shadow-xl" @submit.prevent="savePassword">
+        <form class="space-y-4 rounded-2xl bg-[#1c2a25] p-4.5 sm:p-6 border border-[#0d685b]/30 shadow-xl" @submit.prevent="savePassword">
             <h2 class="text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-3">Ganti Kata Sandi</h2>
             <div>
                 <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80" for="current_password">Password Saat Ini</label>

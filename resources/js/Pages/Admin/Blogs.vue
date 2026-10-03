@@ -51,7 +51,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
     <!-- Form Buat Artikel -->
     <form
         v-if="showCreate"
-        class="mt-5 space-y-4 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 shadow-xl text-[#f3f2e7]"
+        class="mt-5 space-y-4 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]"
         @submit.prevent="submit"
     >
         <h2 class="text-base font-bold text-[#f3f2e7]">Tulis Artikel Baru</h2>

@@ -86,13 +86,13 @@ const inputClass = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px
                     @keydown.enter.prevent="applyFilter"
                 />
             </div>
-            <div class="w-40">
+            <div class="w-full sm:w-40">
                 <select v-model="storeFilter" :class="inputClass" @change="applyFilter">
                     <option value="">Semua Toko</option>
                     <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
             </div>
-            <div class="w-40">
+            <div class="w-full sm:w-40">
                 <select v-model="statusFilter" :class="inputClass" @change="applyFilter">
                     <option value="">Semua Status</option>
                     <option v-for="st in statuses" :key="st.value" :value="st.value">{{ st.label }}</option>

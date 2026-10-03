@@ -206,7 +206,7 @@ const deliveryStatusBadge = (status) => {
         <!-- PESANAN SIAP KIRIM (BELUM ADA KURIR) -->
         <div
             v-if="unassignedOrders.length"
-            class="overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-950/30 p-5 shadow-lg text-[#f3f2e7]"
+            class="overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-950/30 p-4 sm:p-5 shadow-lg text-[#f3f2e7]"
         >
             <div class="flex items-center gap-2 mb-3">
                 <span class="text-base">⚠️</span>
@@ -277,7 +277,7 @@ const deliveryStatusBadge = (status) => {
 
         <!-- DAFTAR PERSONIL KURIR -->
         <div
-            class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7]"
+            class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg text-[#f3f2e7]"
         >
             <h2 class="text-base font-black text-[#f3f2e7] mb-3">
                 Daftar Personil Kurir Internal
@@ -362,7 +362,7 @@ const deliveryStatusBadge = (status) => {
         <div
             class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] shadow-lg text-[#f3f2e7]"
         >
-            <div class="border-b border-[#0d685b]/30 p-5 bg-[#131d1a]">
+            <div class="border-b border-[#0d685b]/30 p-4 sm:p-5 bg-[#131d1a]">
                 <div
                     class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >

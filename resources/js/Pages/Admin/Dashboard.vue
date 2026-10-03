@@ -47,7 +47,7 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
     </div>
 
     <!-- PUSAT KONTROL CEPAT ADMINISTRATOR -->
-    <div class="mt-6 overflow-hidden rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25] p-5 text-[#f3f2e7] shadow-xl sm:p-6">
+    <div class="mt-6 overflow-hidden rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25] p-4 text-[#f3f2e7] shadow-xl sm:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <div class="flex items-center gap-2">

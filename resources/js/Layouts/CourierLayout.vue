@@ -99,10 +99,10 @@ const logout = () => router.post("/logout");
     <div class="min-h-screen bg-[#17231f] text-[#f3f2e7]">
         <!-- HEADER KURIR -->
         <header
-            class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe"
+            class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe"
         >
             <nav
-                class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"
+                class="mx-auto flex max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3"
             >
                 <div class="flex items-center gap-3 sm:gap-6">
                     <Link href="/kurir" class="flex items-center gap-2 group">
@@ -180,7 +180,7 @@ const logout = () => router.post("/logout");
         </header>
 
         <!-- KONTEN UTAMA DENGAN GERBANG LOKASI WAJIB -->
-        <main class="mx-auto max-w-5xl px-4 py-6 pb-12 pb-safe px-safe">
+        <main class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 pb-12 pb-safe">
             <!-- FLASH MESSAGE -->
             <p
                 v-if="flash"

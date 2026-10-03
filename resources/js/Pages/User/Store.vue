@@ -59,11 +59,11 @@ const add = (product) =>
         <input
             v-model="q"
             placeholder="Cari produk..."
-            class="rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-sm text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+            class="w-full sm:w-auto flex-1 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-sm text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
         />
         <select
             v-model="category"
-            class="rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-sm text-[#f3f2e7] focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+            class="w-full sm:w-auto rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-sm text-[#f3f2e7] focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
             @change="search"
         >
             <option value="" class="bg-[#131d1a] text-[#f3f2e7]">Semua kategori</option>
@@ -71,7 +71,7 @@ const add = (product) =>
                 {{ c.name }}
             </option>
         </select>
-        <button class="rounded-xl bg-[#0d685b] hover:bg-[#117c6d] px-5 py-2.5 text-sm font-bold text-[#f3f2e7] transition shadow-md shadow-[#0d685b]/20">
+        <button class="w-full sm:w-auto rounded-xl bg-[#0d685b] hover:bg-[#117c6d] px-5 py-2.5 text-sm font-bold text-[#f3f2e7] transition shadow-md shadow-[#0d685b]/20">
             Cari
         </button>
     </form>

@@ -45,7 +45,7 @@ const input = 'w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 
     </Link>
     <h1 class="mt-2 text-2xl font-black text-[#f3f2e7] tracking-tight">{{ editing ? 'Ubah Informasi Produk' : 'Tambah Produk Baru' }}</h1>
 
-    <form class="mt-6 max-w-2xl space-y-4 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-6 shadow-xl text-[#f3f2e7]" @submit.prevent="submit">
+    <form class="mt-6 max-w-2xl space-y-4 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]" @submit.prevent="submit">
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">Pilar Toko</label>

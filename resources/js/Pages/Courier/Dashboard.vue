@@ -270,7 +270,7 @@ onUnmounted(() => {
     <Head title="Panel Kurir" />
 
     <!-- TUGAS AKTIF KURIR -->
-    <div v-if="activeDelivery" class="rounded-2xl border-2 border-[#0d685b] bg-[#1c2a25] p-6 shadow-xl text-[#f3f2e7]">
+    <div v-if="activeDelivery" class="rounded-2xl border-2 border-[#0d685b] bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 pb-4">
             <div>
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0d685b]/40 px-3 py-1 text-xs font-semibold text-[#f3f2e7] border border-[#0d685b]/60 uppercase tracking-wider">

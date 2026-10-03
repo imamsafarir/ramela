@@ -26,7 +26,7 @@ defineProps({
             <div class="pointer-events-none absolute -left-20 top-1/4 h-80 w-80 rounded-full bg-[#0d685b]/25 blur-3xl"></div>
             <div class="pointer-events-none absolute -right-20 top-1/3 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
 
-            <div class="relative mx-auto max-w-5xl px-4 text-center">
+            <div class="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
                 <!-- Badge SSO -->
                 <div class="inline-flex items-center gap-2 rounded-full border border-[#0d685b] bg-[#0d685b]/20 px-4 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-sm backdrop-blur-xs">
                     <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -75,7 +75,7 @@ defineProps({
 
         <!-- 3 FITUR UTAMA DALAM SATU APLIKASI -->
         <section class="border-y border-[#0d685b]/30 bg-[#131d1a]/80 py-12">
-            <div class="mx-auto max-w-6xl px-4">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="grid gap-6 sm:grid-cols-3">
                     <div class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-white">
@@ -112,7 +112,7 @@ defineProps({
 
         <!-- SECTION 3 LAYANAN UTAMA RAMELA -->
         <section id="layanan" class="py-20 md:py-28">
-            <div class="mx-auto max-w-6xl px-4">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <span class="rounded-full border border-[#0d685b] bg-[#0d685b]/20 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-300">
                         Ekosistem Terintegrasi
@@ -227,8 +227,8 @@ defineProps({
 
         <!-- BANNER CALL TO ACTION BAWAH -->
         <section class="py-12">
-            <div class="mx-auto max-w-5xl px-4">
-                <div class="relative overflow-hidden rounded-3xl border border-[#0d685b]/50 bg-gradient-to-r from-[#0d685b] to-[#14231f] p-8 sm:p-12 text-center shadow-2xl">
+            <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                <div class="relative overflow-hidden rounded-3xl border border-[#0d685b]/50 bg-gradient-to-r from-[#0d685b] to-[#14231f] p-6 sm:p-12 text-center shadow-2xl">
                     <h2 class="text-2xl font-black text-[#f3f2e7] sm:text-3xl">
                         Mulai Belanja dengan Satu Akun Terpadu
                     </h2>
@@ -255,7 +255,7 @@ defineProps({
 
         <!-- BLOG PREVIEW -->
         <section v-if="recentBlogs?.length" class="border-t border-[#0d685b]/30 bg-[#131d1a]/60 py-16">
-            <div class="mx-auto max-w-6xl px-4">
+            <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-xl font-black text-[#f3f2e7] sm:text-2xl">Kabar & Artikel Terbaru</h2>
@@ -295,7 +295,7 @@ defineProps({
 
         <!-- FAQ PREVIEW -->
         <section v-if="faqs?.length" class="py-16 md:py-20">
-            <div class="mx-auto max-w-4xl px-4">
+            <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <h2 class="text-xl font-black text-[#f3f2e7] sm:text-2xl">Pertanyaan yang Sering Diajukan</h2>
                     <p class="mt-1 text-xs text-[#f3f2e7]/60">Temukan informasi seputar transaksi, dompet digital, dan pengiriman.</p>

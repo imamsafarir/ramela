@@ -38,26 +38,50 @@ html, body {
 }
 
 .pl-safe {
-    padding-left: env(safe-area-inset-left, 0px);
+    padding-left: max(1rem, calc(1rem + env(safe-area-inset-left, 0px)));
 }
 
 .pr-safe {
-    padding-right: env(safe-area-inset-right, 0px);
+    padding-right: max(1rem, calc(1rem + env(safe-area-inset-right, 0px)));
 }
 
+/* Horizontal safe padding:
+   Guarantees minimum mobile gutter of 1rem (16px), expanding on larger screens,
+   and adds safe-area-inset in landscape or notch displays so content never touches the bezel.
+*/
 .px-safe {
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
+    padding-left: max(1rem, calc(1rem + env(safe-area-inset-left, 0px)));
+    padding-right: max(1rem, calc(1rem + env(safe-area-inset-right, 0px)));
+}
+
+@media (min-width: 640px) {
+    .px-safe {
+        padding-left: max(1.5rem, calc(1.5rem + env(safe-area-inset-left, 0px)));
+        padding-right: max(1.5rem, calc(1.5rem + env(safe-area-inset-right, 0px)));
+    }
+    .pl-safe {
+        padding-left: max(1.5rem, calc(1.5rem + env(safe-area-inset-left, 0px)));
+    }
+    .pr-safe {
+        padding-right: max(1.5rem, calc(1.5rem + env(safe-area-inset-right, 0px)));
+    }
+}
+
+@media (min-width: 1024px) {
+    .px-safe {
+        padding-left: max(2rem, calc(2rem + env(safe-area-inset-left, 0px)));
+        padding-right: max(2rem, calc(2rem + env(safe-area-inset-right, 0px)));
+    }
 }
 
 .py-safe {
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-top: max(1rem, calc(1rem + env(safe-area-inset-top, 0px)));
+    padding-bottom: max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
 }
 
 /* Header safe padding: blends header background into notch / Dynamic Island / status bar */
 .header-safe {
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
 }
 
 /* Bottom nav safe padding:

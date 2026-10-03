@@ -107,7 +107,7 @@ const input =
     <div class="mt-6 grid gap-6 lg:grid-cols-12">
         <!-- FORM PENGIRIMAN & PENERIMA -->
         <form
-            class="space-y-5 rounded-2xl bg-[#1c2a25] p-6 border border-[#0d685b]/30 shadow-xl lg:col-span-7"
+            class="space-y-5 rounded-2xl bg-[#1c2a25] p-4.5 sm:p-6 border border-[#0d685b]/30 shadow-xl lg:col-span-7"
             @submit.prevent="submit"
         >
             <!-- PILIHAN METODE PENGIRIMAN -->
@@ -312,7 +312,7 @@ const input =
         </form>
 
         <!-- RINGKASAN PESANAN -->
-        <div class="h-fit rounded-2xl bg-[#1c2a25] p-6 border border-[#0d685b]/30 shadow-xl lg:col-span-5">
+        <div class="h-fit rounded-2xl bg-[#1c2a25] p-4.5 sm:p-6 border border-[#0d685b]/30 shadow-xl lg:col-span-5">
             <h2 class="mb-4 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-3">Ringkasan Pesanan</h2>
             <ul class="divide-y divide-[#0d685b]/20 text-sm">
                 <li
