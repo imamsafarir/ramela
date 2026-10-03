@@ -47,7 +47,21 @@ class LoginController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
 
-        return redirect()->intended(route($request->user()->homeRoute()));
+        $defaultTarget = match ($request->user()->primaryRole()) {
+            \App\Enums\Role::Courier->value => '/kurir',
+            default => '/dashboard',
+        };
+
+        $intended = $request->session()->pull('url.intended');
+        if ($intended) {
+            $parsed = parse_url($intended);
+            if (! empty($parsed['path'])) {
+                $target = $parsed['path'] . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
+                return redirect($target);
+            }
+        }
+
+        return redirect($defaultTarget);
     }
 
     public function destroy(Request $request): RedirectResponse

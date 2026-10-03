@@ -20,9 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
 
-        $middleware->redirectGuestsTo(fn() => route('login'));
+        $middleware->trustProxies(at: '*');
+        $middleware->redirectGuestsTo('/login');
         $middleware->validateCsrfTokens(except: ['midtrans/notification']);
-        $middleware->redirectUsersTo(fn() => route(auth()->user()->homeRoute()));
+        $middleware->redirectUsersTo(fn() => match (auth()->user()?->primaryRole()) {
+            \App\Enums\Role::Courier->value => '/kurir',
+            default => '/dashboard',
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
