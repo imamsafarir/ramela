@@ -7,7 +7,6 @@
   "display": "standalone",
   "display_override": [
     "standalone",
-    "fullscreen",
     "window-controls-overlay"
   ],
   "orientation": "portrait-primary",

@@ -5,10 +5,73 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.vue';
 
 @theme {
     --font-sans:
         "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
         "Noto Color Emoji";
+}
+
+/* Base styles for standalone PWA & notch rendering */
+html, body {
+    background-color: #17231f;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe-area insets utilities (iOS Notch, Dynamic Island, Android 3-Button Nav, & Gesture Bar) */
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+    padding-top: max(1.25rem, calc(0.75rem + env(safe-area-inset-top, 0px)));
+}
+
+.pb-safe {
+    padding-bottom: max(1.25rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)));
+}
+
+.pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+}
+
+.pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+.px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+}
+
+.py-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Header safe padding: blends header background into notch / Dynamic Island / status bar */
+.header-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom nav safe padding:
+   Protects against phone software navigation bar (Android 3-button bar or iOS home indicator)
+   so buttons are elevated and never overlapped or accidentally pressed.
+*/
+.bottom-nav-safe {
+    padding-bottom: max(0.65rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
+}
+
+/* Main content bottom clearance:
+   Ensures scrollable content, forms, and submit buttons can scroll cleanly
+   above the fixed bottom navigation bar on all device screen sizes.
+*/
+.content-bottom-safe {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }

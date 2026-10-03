@@ -48,7 +48,7 @@
     <x-inertia::app />
 
     <!-- PWA Install Prompt Banner -->
-    <div id="pwa-install-banner" class="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#17231f] border border-[#0d685b]/60 text-[#f3f2e7] p-4 rounded-2xl shadow-2xl z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none flex items-start gap-3">
+    <div id="pwa-install-banner" class="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#17231f] border border-[#0d685b]/60 text-[#f3f2e7] p-4 rounded-2xl shadow-2xl z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none flex items-start gap-3">
         <div class="w-12 h-12 rounded-xl bg-[#0d685b] flex items-center justify-center shrink-0 shadow">
             <img src="/icons/icon-192x192.png" alt="RAMELA" class="w-8 h-8 rounded-lg" />
         </div>
