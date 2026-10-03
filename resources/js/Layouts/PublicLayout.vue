@@ -10,7 +10,7 @@ const features = computed(() => page.props.features ?? { blog: true, faq: true }
 <template>
     <div class="min-h-screen bg-[#17231f] text-[#f3f2e7]">
         <!-- HEADER / NAVIGATION -->
-        <header class="sticky top-0 z-40 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md">
+        <header class="sticky top-0 z-40 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe">
             <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                 <div class="flex items-center gap-8">
                     <Link href="/" class="text-2xl font-black tracking-tight text-[#f3f2e7]">
@@ -53,7 +53,7 @@ const features = computed(() => page.props.features ?? { blog: true, faq: true }
         <slot />
 
         <!-- FOOTER -->
-        <footer class="border-t border-[#0d685b]/30 bg-[#121c19] text-[#f3f2e7] py-12 pb-24 md:pb-12">
+        <footer class="border-t border-[#0d685b]/30 bg-[#121c19] text-[#f3f2e7] py-12 content-bottom-safe md:pb-12 px-safe">
             <div class="mx-auto max-w-6xl px-4">
                 <div class="grid gap-8 md:grid-cols-4">
                     <div class="md:col-span-2">
@@ -86,7 +86,7 @@ const features = computed(() => page.props.features ?? { blog: true, faq: true }
         </footer>
 
         <!-- MOBILE BOTTOM NAVIGATION (PUBLIC) -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-2 py-2 backdrop-blur-md md:hidden shadow-lg">
+        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-2 pt-2 bottom-nav-safe backdrop-blur-md md:hidden shadow-lg px-safe">
             <Link
                 href="/"
                 class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition"

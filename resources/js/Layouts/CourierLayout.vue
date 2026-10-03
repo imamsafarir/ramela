@@ -96,10 +96,10 @@ const logout = () => router.post("/logout");
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7] pb-20 md:pb-10">
+    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7]">
         <!-- HEADER KURIR -->
         <header
-            class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md"
+            class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe"
         >
             <nav
                 class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3"
@@ -151,17 +151,8 @@ const logout = () => router.post("/logout");
                         <span>GPS Menunggu Izin</span>
                     </div>
 
-                    <!-- Tombol Cepat Beralih ke Mode Belanja Pengguna -->
-                    <Link
-                        href="/dashboard"
-                        class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition shadow-xs active:scale-95"
-                        title="Beralih ke Tampilan Belanja Pengguna"
-                    >
-                        <span>🛍️ Mode Belanja</span>
-                    </Link>
-
                     <div class="flex items-center gap-2 pl-2 border-l border-[#0d685b]/30">
-                        <span class="font-bold text-[#f3f2e7]"
+                        <span class="font-bold text-[#f3f2e7] text-xs max-w-[100px] sm:max-w-none truncate" :title="user?.username"
                             >@{{ user?.username }}</span
                         >
                         <button
@@ -189,7 +180,7 @@ const logout = () => router.post("/logout");
         </header>
 
         <!-- KONTEN UTAMA DENGAN GERBANG LOKASI WAJIB -->
-        <main class="mx-auto max-w-5xl px-4 py-6">
+        <main class="mx-auto max-w-5xl px-4 py-6 pb-12 pb-safe px-safe">
             <!-- FLASH MESSAGE -->
             <p
                 v-if="flash"
@@ -272,44 +263,5 @@ const logout = () => router.post("/logout");
                 <slot />
             </div>
         </main>
-
-        <!-- MOBILE BOTTOM NAVIGATION BAR (KURIR) -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-2 py-2 backdrop-blur-md md:hidden shadow-lg">
-            <Link
-                href="/kurir"
-                class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition"
-                :class="page.url.startsWith('/kurir') ? 'font-bold text-amber-300' : 'text-[#f3f2e7]/60 hover:text-[#f3f2e7]'"
-            >
-                <span class="text-base leading-none">🛵</span>
-                <span class="text-[10px]">Tugas Kurir</span>
-            </Link>
-
-            <Link
-                href="/dashboard"
-                class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition"
-                :class="page.url === '/dashboard' ? 'font-bold text-emerald-400' : 'text-[#f3f2e7]/60 hover:text-[#f3f2e7]'"
-            >
-                <span class="text-base leading-none">🛍️</span>
-                <span class="text-[10px]">Belanja</span>
-            </Link>
-
-            <Link
-                href="/pesanan"
-                class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition"
-                :class="page.url.startsWith('/pesanan') ? 'font-bold text-emerald-400' : 'text-[#f3f2e7]/60 hover:text-[#f3f2e7]'"
-            >
-                <span class="text-base leading-none">📦</span>
-                <span class="text-[10px]">Pesanan</span>
-            </Link>
-
-            <Link
-                href="/profile"
-                class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-medium transition"
-                :class="page.url.startsWith('/profile') ? 'font-bold text-emerald-400' : 'text-[#f3f2e7]/60 hover:text-[#f3f2e7]'"
-            >
-                <span class="text-base leading-none">👤</span>
-                <span class="text-[10px]">Profil</span>
-            </Link>
-        </nav>
     </div>
 </template>

@@ -16,8 +16,8 @@ use Inertia\Response;
 
 class OrderController extends Controller
 {
-    /** Status yang boleh diatur Admin. Shipping/Completed milik Kurir. */
-    private const ADMIN_STATUSES = [OrderStatus::Processed, OrderStatus::ReadyToShip, OrderStatus::Cancelled];
+    /** Status yang boleh diatur Admin. Shipping milik Kurir. */
+    private const ADMIN_STATUSES = [OrderStatus::Processed, OrderStatus::ReadyToShip, OrderStatus::Completed, OrderStatus::Cancelled];
 
     public function index(Request $request): Response
     {
@@ -39,6 +39,7 @@ class OrderController extends Controller
             ->through(fn ($t) => [
                 'invoice_number' => $t->invoice_number, 'store' => $t->store->name, 'username' => $t->user->username,
                 'final_amount' => $t->final_amount, 'status' => $t->status->value, 'status_label' => $t->status->label(),
+                'delivery_type' => $t->delivery_type ?? 'courier',
                 'created_at' => $t->created_at->toIso8601String(),
             ]);
 
@@ -62,8 +63,12 @@ class OrderController extends Controller
                 'customer' => $t->user->username,
                 'status' => $t->status->value, 'status_label' => $t->status->label(),
                 'promo_code' => $t->promo?->code,
-                'total_amount' => $t->total_amount, 'discount_amount' => $t->discount_amount, 'final_amount' => $t->final_amount,
+                'total_amount' => $t->total_amount, 'discount_amount' => $t->discount_amount,
+                'shipping_cost' => $t->shipping_cost, 'final_amount' => $t->final_amount,
+                'delivery_type' => $t->delivery_type ?? 'courier',
                 'recipient_name' => $t->recipient_name, 'recipient_phone' => $t->recipient_phone,
+                'shipping_city' => $t->shipping_city, 'shipping_district' => $t->shipping_district,
+                'shipping_postal_code' => $t->shipping_postal_code,
                 'shipping_address' => $t->shipping_address, 'note' => $t->note,
                 'shipping_latitude' => $t->shipping_latitude, 'shipping_longitude' => $t->shipping_longitude,
                 'created_at' => $t->created_at->toIso8601String(),

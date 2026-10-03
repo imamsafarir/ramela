@@ -5,7 +5,7 @@ const page = usePage();
 </script>
 
 <template>
-    <div class="flex min-h-screen flex-col items-center justify-center bg-[#17231f] text-[#f3f2e7] px-4 py-8">
+    <div class="flex min-h-screen flex-col items-center justify-center bg-[#17231f] text-[#f3f2e7] px-4 py-8 pt-safe pb-safe px-safe">
         <Link href="/" class="mb-6 text-2xl font-black tracking-tight text-[#f3f2e7] group">
             RAMELA<span class="text-emerald-400 group-hover:animate-ping">.</span>
         </Link>

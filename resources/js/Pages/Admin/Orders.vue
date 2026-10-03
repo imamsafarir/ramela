@@ -70,9 +70,14 @@ const input = 'rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 te
             <tbody class="divide-y divide-[#0d685b]/20">
                 <tr v-for="o in orders.data" :key="o.invoice_number" class="hover:bg-[#131d1a]/50 transition">
                     <td class="px-4 py-3">
-                        <Link :href="`/admin/pesanan/${o.invoice_number}`" class="font-bold text-[#f3f2e7] hover:text-emerald-400 underline transition">
-                            {{ o.invoice_number }}
-                        </Link>
+                        <div class="flex items-center gap-1.5">
+                            <Link :href="`/admin/pesanan/${o.invoice_number}`" class="font-bold text-[#f3f2e7] hover:text-emerald-400 underline transition">
+                                {{ o.invoice_number }}
+                            </Link>
+                            <span class="rounded px-1.5 py-0.5 text-[10px] font-bold" :class="o.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/40'">
+                                {{ o.delivery_type === 'pickup' ? 'Pickup' : 'Kurir' }}
+                            </span>
+                        </div>
                     </td>
                     <td class="px-4 py-3 text-xs text-[#f3f2e7]/80">{{ o.store }}</td>
                     <td class="px-4 py-3 text-xs font-medium text-[#f3f2e7]">{{ o.username }}</td>

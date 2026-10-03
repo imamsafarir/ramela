@@ -65,9 +65,25 @@ const apply = (a) => {
                     <span class="font-semibold text-[#f3f2e7]">{{ rupiah(d.subtotal) }}</span>
                 </li>
             </ul>
-            <div class="mt-4 border-t border-[#0d685b]/30 pt-3 flex justify-between text-base font-bold">
-                <span>Total Dibayar:</span>
-                <span class="text-emerald-400">{{ rupiah(order.final_amount) }}</span>
+            <div class="mt-4 border-t border-[#0d685b]/30 pt-3 space-y-1.5 text-xs text-[#f3f2e7]/80">
+                <div class="flex justify-between">
+                    <span>Subtotal Produk:</span>
+                    <span class="font-semibold text-[#f3f2e7]">{{ rupiah(order.total_amount) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Ongkir Kurir:</span>
+                    <span class="font-semibold" :class="order.delivery_type === 'pickup' ? 'text-emerald-400' : 'text-[#f3f2e7]'">
+                        {{ order.delivery_type === 'pickup' ? 'Gratis (Pickup Toko)' : rupiah(order.shipping_cost || 0) }}
+                    </span>
+                </div>
+                <div v-if="Number(order.discount_amount) > 0" class="flex justify-between text-emerald-400">
+                    <span>Diskon:</span>
+                    <span>− {{ rupiah(order.discount_amount) }}</span>
+                </div>
+                <div class="border-t border-[#0d685b]/20 pt-2 flex justify-between text-base font-bold text-[#f3f2e7]">
+                    <span>Total Dibayar:</span>
+                    <span class="text-emerald-400">{{ rupiah(order.final_amount) }}</span>
+                </div>
             </div>
         </div>
 
@@ -104,9 +120,34 @@ const apply = (a) => {
 
             <!-- INFORMASI PENGIRIMAN -->
             <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7]">
-                <h2 class="mb-2 text-sm font-bold uppercase tracking-wider text-[#0d685b]">Informasi Pengiriman</h2>
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-[#0d685b]">
+                        {{ order.delivery_type === 'pickup' ? 'Informasi Pengambilan' : 'Informasi Pengiriman' }}
+                    </h2>
+                    <span
+                        class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                        :class="order.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/40 text-emerald-300 border border-[#0d685b]/60'"
+                    >
+                        {{ order.delivery_type === 'pickup' ? '🏪 Ambil Sendiri (Pickup)' : '🛵 Kirim via Kurir' }}
+                    </span>
+                </div>
                 <p class="text-sm font-bold text-[#f3f2e7]">👤 {{ order.recipient_name }} <span class="text-xs font-normal text-[#f3f2e7]/60">({{ order.recipient_phone }})</span></p>
-                <p class="mt-1.5 whitespace-pre-line text-xs text-[#f3f2e7]/80 leading-relaxed">📍 {{ order.shipping_address }}</p>
+
+                <div v-if="order.delivery_type === 'courier'" class="mt-2 space-y-1 text-xs text-[#f3f2e7]/80">
+                    <p v-if="order.shipping_city" class="font-bold text-emerald-400">
+                        📍 Kab/Kota: {{ order.shipping_city }}
+                    </p>
+                    <p v-if="order.shipping_district">
+                        🏘️ Kec/Kel: {{ order.shipping_district }} <span v-if="order.shipping_postal_code">· Kode Pos: {{ order.shipping_postal_code }}</span>
+                    </p>
+                    <p class="whitespace-pre-line leading-relaxed">
+                        🏠 Detail: {{ order.shipping_address }}
+                    </p>
+                </div>
+                <div v-else class="mt-2 text-xs text-emerald-300 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30">
+                    🏪 Pelanggan akan mengambil sendiri pesanan langsung ke lokasi toko {{ order.store }}.
+                </div>
+
                 <p v-if="order.delivery?.courier_name" class="mt-2.5 text-xs font-semibold text-emerald-400 bg-emerald-950/40 p-2 rounded-lg border border-emerald-500/20">
                     🛵 Kurir Bertugas: <strong>{{ order.delivery.courier_name }}</strong>
                 </p>

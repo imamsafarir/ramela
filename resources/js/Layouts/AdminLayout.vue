@@ -37,9 +37,9 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7] pb-20 xl:pb-10">
+    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7]">
         <!-- HEADER ADMIN -->
-        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md">
+        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
                 <!-- Brand & Desktop Nav -->
                 <div class="flex items-center gap-5">
@@ -72,20 +72,20 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
                 </div>
 
                 <!-- Right Actions: Switcher ke Mode Belanja, User info, Logout & Mobile Toggle -->
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <!-- Tombol Cepat Beralih ke Mode Belanja (Dashboard Pengguna) -->
+                <div class="flex items-center gap-1.5 sm:gap-3">
+                    <!-- Tombol Cepat Beralih ke Mode Belanja (Dashboard Pengguna) - Desktop Only, di HP ada di bottom nav -->
                     <Link
                         href="/dashboard"
-                        class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition shadow-xs active:scale-95"
+                        class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition shadow-xs active:scale-95"
                         title="Beralih ke Tampilan Belanja Pengguna"
                     >
                         <span>🛍️ Mode Belanja</span>
                     </Link>
 
-                    <div class="hidden items-center gap-2 pl-2 sm:flex border-l border-[#0d685b]/30">
+                    <div class="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-[#0d685b]/30">
                         <div class="text-right">
-                            <span class="block text-xs font-bold text-[#f3f2e7]">{{ user?.name || user?.username }}</span>
-                            <span class="block text-[10px] uppercase font-semibold text-emerald-300/80">{{ user?.role }}</span>
+                            <span class="block text-xs font-bold text-[#f3f2e7] max-w-[80px] sm:max-w-none truncate">@{{ user?.username || user?.name }}</span>
+                            <span class="hidden sm:block text-[10px] uppercase font-semibold text-emerald-300/80">{{ user?.role }}</span>
                         </div>
                         <button
                             class="rounded-lg p-1.5 text-[#f3f2e7]/50 hover:bg-rose-500/20 hover:text-rose-400 transition"
@@ -159,7 +159,7 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
         </header>
 
         <!-- MAIN BODY -->
-        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 content-bottom-safe xl:pb-10 px-safe">
             <div
                 v-if="flash"
                 class="mb-6 flex items-center justify-between rounded-2xl border border-[#0d685b] bg-[#0d685b]/30 px-4 py-3 text-sm font-semibold text-[#f3f2e7]"
@@ -173,7 +173,7 @@ const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.s
         </main>
 
         <!-- MOBILE BOTTOM NAVIGATION BAR (ADMIN) -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 py-2 backdrop-blur-md xl:hidden shadow-lg">
+        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 pt-2 bottom-nav-safe backdrop-blur-md xl:hidden shadow-lg px-safe">
             <Link
                 href="/admin"
                 class="flex flex-col items-center gap-0.5 px-2 py-1 text-xs font-medium transition"

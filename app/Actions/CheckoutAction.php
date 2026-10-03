@@ -72,7 +72,38 @@ class CheckoutAction
                 );
             }
 
-            $final = bcsub($total, $discount, 2);
+            $deliveryType = $shipping['delivery_type'] ?? (isset($shipping['shipping_rate_id']) ? 'courier' : 'pickup');
+
+            if ($deliveryType === 'courier') {
+                $rate = \App\Models\ShippingRate::where('is_active', true)->find($shipping['shipping_rate_id'] ?? null);
+                if (! $rate) {
+                    throw new CheckoutException('Wilayah pengiriman tidak valid atau tarif kurir tidak aktif.');
+                }
+                $shippingCost = (string) $rate->shipping_cost;
+                $shippingCity = $rate->city_name;
+                $shippingDistrict = $shipping['shipping_district'] ?? null;
+                $shippingPostalCode = $shipping['shipping_postal_code'] ?? null;
+                $shippingAddress = $shipping['shipping_address'] ?? '';
+                $shippingLat = $shipping['shipping_latitude'] ?? null;
+                $shippingLng = $shipping['shipping_longitude'] ?? null;
+            } else {
+                $deliveryType = 'pickup';
+                $shippingCost = '0.00';
+                $shippingCity = null;
+                $shippingDistrict = null;
+                $shippingPostalCode = null;
+                $shippingAddress = ! empty($shipping['shipping_address'])
+                    ? $shipping['shipping_address']
+                    : ('Ambil Sendiri di Toko (' . $store->name . ')');
+                $shippingLat = null;
+                $shippingLng = null;
+            }
+
+            $productNet = bcsub($total, $discount, 2);
+            if (bccomp($productNet, '0.00', 2) < 0) {
+                $productNet = '0.00';
+            }
+            $final = bcadd($productNet, $shippingCost, 2);
 
             $transaction = Transaction::create([
                 'invoice_number' => $this->invoiceNumber(),
@@ -81,13 +112,18 @@ class CheckoutAction
                 'total_amount' => $total,
                 'promo_id' => $promo?->id,
                 'discount_amount' => $discount,
+                'shipping_cost' => $shippingCost,
                 'final_amount' => $final,
                 'status' => OrderStatus::Pending,
+                'delivery_type' => $deliveryType,
                 'recipient_name' => $shipping['recipient_name'],
                 'recipient_phone' => $shipping['recipient_phone'],
-                'shipping_address' => $shipping['shipping_address'],
-                'shipping_latitude' => $shipping['shipping_latitude'] ?? null,
-                'shipping_longitude' => $shipping['shipping_longitude'] ?? null,
+                'shipping_city' => $shippingCity,
+                'shipping_district' => $shippingDistrict,
+                'shipping_postal_code' => $shippingPostalCode,
+                'shipping_address' => $shippingAddress,
+                'shipping_latitude' => $shippingLat,
+                'shipping_longitude' => $shippingLng,
                 'note' => $shipping['note'] ?? null,
             ]);
 

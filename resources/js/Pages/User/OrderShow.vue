@@ -233,6 +233,12 @@ const waLink = computed(() => {
                         <dt>Subtotal Item</dt>
                         <dd>{{ rupiah(order.total_amount) }}</dd>
                     </div>
+                    <div class="flex justify-between text-[#f3f2e7]/70">
+                        <dt>{{ order.delivery_type === 'pickup' ? 'Metode Pengiriman' : 'Ongkos Kirim Kurir' }}</dt>
+                        <dd :class="order.delivery_type === 'pickup' ? 'text-emerald-400 font-bold' : ''">
+                            {{ order.delivery_type === 'pickup' ? 'Gratis (Ambil Sendiri)' : rupiah(order.shipping_cost || 0) }}
+                        </dd>
+                    </div>
                     <div
                         v-if="Number(order.discount_amount) > 0"
                         class="flex justify-between font-semibold text-emerald-400"
@@ -250,22 +256,49 @@ const waLink = computed(() => {
 
         <!-- Kolom Kanan: Alamat Pengiriman & Riwayat Status -->
         <div class="space-y-6">
-            <!-- Alamat Pengiriman -->
+            <!-- Alamat Pengiriman / Pengambilan -->
             <div class="rounded-2xl bg-[#1c2a25] p-5 shadow-xl border border-[#0d685b]/30">
-                <h2 class="mb-3 text-base font-bold text-[#f3f2e7] border-b border-[#0d685b]/20 pb-2">Informasi Pengiriman</h2>
+                <div class="flex items-center justify-between border-b border-[#0d685b]/20 pb-2 mb-3">
+                    <h2 class="text-base font-bold text-[#f3f2e7]">
+                        {{ order.delivery_type === 'pickup' ? 'Informasi Pengambilan' : 'Informasi Pengiriman' }}
+                    </h2>
+                    <span
+                        class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+                        :class="order.delivery_type === 'pickup' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-[#0d685b]/30 text-emerald-300 border border-[#0d685b]/50'"
+                    >
+                        {{ order.delivery_type === 'pickup' ? '🏪 Ambil Sendiri (Pickup)' : '🛵 Kirim via Kurir' }}
+                    </span>
+                </div>
                 <div class="space-y-2 text-sm">
                     <p class="font-bold text-[#f3f2e7]">
                         {{ order.recipient_name }}
                         <span class="font-normal text-[#f3f2e7]/60">({{ order.recipient_phone }})</span>
                     </p>
-                    <p class="whitespace-pre-line text-xs text-[#f3f2e7]/80 leading-relaxed">
-                        {{ order.shipping_address }}
-                    </p>
+
+                    <!-- Khusus Kurir: Tampilkan Kota, Kecamatan/Kelurahan, Kode Pos, Detail -->
+                    <div v-if="order.delivery_type === 'courier'" class="space-y-1 text-xs text-[#f3f2e7]/80">
+                        <p v-if="order.shipping_city" class="font-semibold text-emerald-400">
+                            Wilayah: {{ order.shipping_city }}
+                        </p>
+                        <p v-if="order.shipping_district">
+                            Kec/Kel: {{ order.shipping_district }} <span v-if="order.shipping_postal_code">· Kode Pos: {{ order.shipping_postal_code }}</span>
+                        </p>
+                        <p class="whitespace-pre-line leading-relaxed">
+                            Detail: {{ order.shipping_address }}
+                        </p>
+                    </div>
+
+                    <!-- Khusus Pickup: Tampilkan Info Pengambilan Toko -->
+                    <div v-else class="rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80">
+                        <p class="font-semibold text-emerald-300 mb-1">🏪 Lokasi Pengambilan: {{ order.store }}</p>
+                        <p class="text-[11px] text-[#f3f2e7]/60">Silakan tunjukkan nomor invoice ({{ order.invoice_number }}) kepada staf toko saat mengambil pesanan.</p>
+                    </div>
+
                     <p v-if="order.delivery?.courier_name" class="mt-2 text-xs font-semibold text-emerald-300">
                         Kurir Ditugaskan: {{ order.delivery.courier_name }}
                     </p>
                     <p v-if="order.note" class="mt-2 rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-3 text-xs text-[#f3f2e7]/80 italic">
-                        Catatan Pengiriman: "{{ order.note }}"
+                        Catatan: "{{ order.note }}"
                     </p>
                 </div>
             </div>

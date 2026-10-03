@@ -35,11 +35,11 @@ class CourierController extends Controller
             ->where('status', OrderStatus::ReadyToShip)
             ->where(function ($q) {
                 $q->whereDoesntHave('delivery')
-                  ->orWhereHas('delivery', fn ($d) => $d->whereNull('courier_id'));
+                    ->orWhereHas('delivery', fn($d) => $d->whereNull('courier_id'));
             })
             ->latest()
             ->get()
-            ->map(fn ($t) => [
+            ->map(fn($t) => [
                 'invoice_number' => $t->invoice_number,
                 'store' => $t->store->name,
                 'recipient_name' => $t->recipient_name,
@@ -56,7 +56,7 @@ class CourierController extends Controller
             ->latest('completed_at')
             ->take(10)
             ->get()
-            ->map(fn ($d) => [
+            ->map(fn($d) => [
                 'invoice_number' => $d->transaction->invoice_number,
                 'store' => $d->transaction->store->name,
                 'recipient_name' => $d->transaction->recipient_name,
@@ -83,7 +83,7 @@ class CourierController extends Controller
                     'note' => $activeDelivery->transaction->note,
                     'details' => $activeDelivery->transaction->details->map->only('product_name', 'quantity'),
                 ],
-                'photos' => $activeDelivery->photos->map(fn ($p) => [
+                'photos' => $activeDelivery->photos->map(fn($p) => [
                     'type' => $p->type,
                     'url' => Storage::url($p->path),
                     'taken_at' => $p->taken_at->toIso8601String(),

@@ -19,7 +19,7 @@ enum OrderStatus: string
             self::Pending => [self::Paid, self::Cancelled],
             self::Paid => [self::Processed, self::Cancelled],
             self::Processed => [self::ReadyToShip, self::Cancelled],
-            self::ReadyToShip => [self::Shipping, self::Cancelled],
+            self::ReadyToShip => [self::Shipping, self::Completed, self::Cancelled],
             self::Shipping => [self::Completed],
             self::Completed, self::Cancelled => [],
         };

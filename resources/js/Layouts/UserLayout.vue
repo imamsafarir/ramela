@@ -21,9 +21,9 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7] pb-20 md:pb-10">
-        <!-- HEADER TOP BAR -->
-        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md">
+    <div class="min-h-screen bg-[#17231f] text-[#f3f2e7] flex flex-col">
+        <!-- HEADER TOP BAR (Sticky with Notch padding) -->
+        <header class="sticky top-0 z-30 border-b border-[#0d685b]/30 bg-[#17231f]/95 backdrop-blur-md header-safe px-safe">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
                 <!-- Brand & Desktop Nav -->
                 <div class="flex items-center gap-6">
@@ -54,21 +54,21 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
                 </div>
 
                 <!-- Right Elements: Saldo Pill, Cart, User Profile & Actions -->
-                <div class="flex items-center gap-2 sm:gap-4">
+                <div class="flex items-center gap-1.5 sm:gap-3">
                     <!-- Quick Saldo Button / Pill -->
                     <Link
                         href="/topup"
-                        class="flex items-center gap-1.5 rounded-full border border-[#0d685b] bg-[#0d685b]/30 px-3 py-1.5 text-xs font-bold text-[#f3f2e7] transition hover:bg-[#0d685b]/50"
+                        class="flex items-center gap-1 rounded-full border border-[#0d685b] bg-[#0d685b]/30 px-2.5 py-1 text-[11px] font-bold text-[#f3f2e7] transition hover:bg-[#0d685b]/50 sm:px-3 sm:py-1.5 sm:text-xs shrink-0"
                         title="Isi Saldo Dompet"
                     >
                         <span>💳</span>
-                        <span>{{ rupiah(user?.saldo) }}</span>
+                        <span class="max-w-[70px] truncate sm:max-w-none">{{ rupiah(user?.saldo) }}</span>
                     </Link>
 
                     <!-- Keranjang -->
                     <Link
                         href="/keranjang"
-                        class="relative rounded-full p-2 text-[#f3f2e7]/80 transition hover:bg-[#1c2a25] hover:text-[#f3f2e7]"
+                        class="relative rounded-full p-1.5 sm:p-2 text-[#f3f2e7]/80 transition hover:bg-[#1c2a25] hover:text-[#f3f2e7] shrink-0"
                         title="Keranjang Belanja"
                     >
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,18 +82,20 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
                         </span>
                     </Link>
 
-                    <!-- Staff/Admin Switcher Button -->
+                    <!-- Staff/Admin Switcher Button (Desktop only, mobile has it on bottom nav) -->
                     <Link
                         v-if="isStaffOrSuper"
                         href="/admin"
-                        class="inline-flex items-center gap-1 rounded-xl border border-amber-500/40 bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/30 shadow-xs transition active:scale-95"
+                        class="hidden md:inline-flex items-center gap-1 rounded-xl border border-amber-500/40 bg-amber-500/20 px-2.5 py-1 text-xs font-bold text-amber-300 hover:bg-amber-500/30 shadow-xs transition active:scale-95"
                     >
                         <span>👑 Mode Admin</span>
                     </Link>
 
-                    <!-- User Menu / Logout -->
-                    <div class="hidden sm:flex items-center gap-2 pl-2 border-l border-[#0d685b]/30">
-                        <span class="text-xs font-bold text-[#f3f2e7]">{{ user?.name || user?.username }}</span>
+                    <!-- User Menu / Logout (Tampil di HP & Desktop, Mirip Halaman Kurir) -->
+                    <div class="flex items-center gap-1 sm:gap-2 pl-1.5 sm:pl-2 border-l border-[#0d685b]/30 shrink-0">
+                        <span class="text-xs font-bold text-[#f3f2e7] max-w-[80px] sm:max-w-none truncate" :title="user?.username">
+                            @{{ user?.username }}
+                        </span>
                         <button
                             class="rounded-lg p-1.5 text-[#f3f2e7]/50 hover:bg-rose-500/20 hover:text-rose-400 transition"
                             title="Keluar"
@@ -109,7 +111,7 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
         </header>
 
         <!-- MAIN CONTENT CONTAINER -->
-        <main class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-6 sm:px-6 content-bottom-safe md:pb-10 px-safe">
             <div
                 v-if="flash"
                 class="mb-6 flex items-center justify-between rounded-2xl border border-[#0d685b] bg-[#0d685b]/30 px-4 py-3 text-sm font-semibold text-[#f3f2e7]"
@@ -123,7 +125,7 @@ const active = (href) => (href === '/dashboard' ? page.url === '/dashboard' : pa
         </main>
 
         <!-- MOBILE BOTTOM NAVIGATION BAR -->
-        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 py-2 backdrop-blur-md md:hidden shadow-lg">
+        <nav class="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around border-t border-[#0d685b]/30 bg-[#121c19]/95 px-1 pt-2 bottom-nav-safe backdrop-blur-md md:hidden shadow-2xl px-safe">
             <Link
                 href="/dashboard"
                 class="flex flex-col items-center gap-0.5 px-2 py-1 text-xs font-medium transition"

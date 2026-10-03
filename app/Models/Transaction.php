@@ -22,15 +22,33 @@ class Transaction extends Model
         ];
     }
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
-    public function store(): BelongsTo { return $this->belongsTo(Store::class); }
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
 
-    public function promo(): BelongsTo { return $this->belongsTo(Promo::class); }
+    public function promo(): BelongsTo
+    {
+        return $this->belongsTo(Promo::class);
+    }
 
-    public function details(): HasMany { return $this->hasMany(TransactionDetail::class); }
+    public function details(): HasMany
+    {
+        return $this->hasMany(TransactionDetail::class);
+    }
 
-    public function statusLogs(): HasMany { return $this->hasMany(TransactionStatusLog::class); }
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(TransactionStatusLog::class);
+    }
 
-    public function delivery(): HasOne { return $this->hasOne(Delivery::class); }
+    public function delivery(): HasOne
+    {
+        return $this->hasOne(Delivery::class);
+    }
 }

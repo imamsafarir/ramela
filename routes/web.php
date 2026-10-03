@@ -86,9 +86,12 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('ad
     Route::get('/pesanan/{invoice}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/pesanan/{invoice}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
 
-    // Kurir & Monitoring Pengiriman
+    // Kurir & Monitoring Pengiriman & Tarif Ongkir
     Route::get('/kurir', [AdminCourierController::class, 'index'])->name('couriers.index');
     Route::post('/kurir/assign', [AdminCourierController::class, 'assign'])->name('couriers.assign');
+    Route::post('/kurir/tarif', [AdminCourierController::class, 'storeRate'])->name('couriers.rates.store');
+    Route::put('/kurir/tarif/{rate}', [AdminCourierController::class, 'updateRate'])->name('couriers.rates.update');
+    Route::delete('/kurir/tarif/{rate}', [AdminCourierController::class, 'destroyRate'])->name('couriers.rates.destroy');
 
     // Manajemen Pengguna (Pindahan dari dewa-panel)
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');

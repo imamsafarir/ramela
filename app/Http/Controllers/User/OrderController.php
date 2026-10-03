@@ -60,7 +60,7 @@ class OrderController extends Controller
                     'current_lat' => $t->delivery->current_lat,
                     'current_lng' => $t->delivery->current_lng,
                     'location_updated_at' => $t->delivery->location_updated_at?->toIso8601String(),
-                    'photos' => $t->delivery->photos->map(fn ($p) => [
+                    'photos' => $t->delivery->photos->map(fn($p) => [
                         'type' => $p->type,
                         'url' => \Illuminate\Support\Facades\Storage::url($p->path),
                         'taken_at' => $p->taken_at->toIso8601String(),

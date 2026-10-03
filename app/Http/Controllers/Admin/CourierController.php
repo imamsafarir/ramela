@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
+use App\Models\ShippingRate;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -54,24 +55,24 @@ class CourierController extends Controller
 
         // 2. Monitoring Tugas Pengiriman (Deliveries)
         $deliveries = Delivery::with([
-                'transaction.store:id,name',
-                'transaction.user:id,username',
-                'courier:id,name,username,phone',
-                'photos',
-            ])
-            ->when($statusFilter, fn ($q, $s) => $q->where('status', $s))
+            'transaction.store:id,name',
+            'transaction.user:id,username',
+            'courier:id,name,username,phone',
+            'photos',
+        ])
+            ->when($statusFilter, fn($q, $s) => $q->where('status', $s))
             ->when($search, function ($q, $t) {
-                $like = '%'.addcslashes($t, '%_\\').'%';
-                $q->whereHas('transaction', fn ($tr) => $tr->where('invoice_number', 'like', $like)
+                $like = '%' . addcslashes($t, '%_\\') . '%';
+                $q->whereHas('transaction', fn($tr) => $tr->where('invoice_number', 'like', $like)
                     ->orWhere('recipient_name', 'like', $like)
                     ->orWhere('shipping_address', 'like', $like))
-                  ->orWhereHas('courier', fn ($cr) => $cr->where('username', 'like', $like)
-                    ->orWhere('name', 'like', $like));
+                    ->orWhereHas('courier', fn($cr) => $cr->where('username', 'like', $like)
+                        ->orWhere('name', 'like', $like));
             })
             ->latest('id')
             ->paginate(15)
             ->withQueryString()
-            ->through(fn ($d) => [
+            ->through(fn($d) => [
                 'id' => $d->id,
                 'invoice_number' => $d->transaction->invoice_number,
                 'store' => $d->transaction->store->name,
@@ -92,7 +93,7 @@ class CourierController extends Controller
                 'location_updated_at' => $d->location_updated_at?->format('d M Y H:i'),
                 'started_at' => $d->started_at?->format('d M Y H:i'),
                 'completed_at' => $d->completed_at?->format('d M Y H:i'),
-                'photos' => $d->photos->map(fn ($p) => [
+                'photos' => $d->photos->map(fn($p) => [
                     'type' => $p->type,
                     'url' => Storage::url($p->path),
                     'notes' => $p->notes,
@@ -105,11 +106,11 @@ class CourierController extends Controller
             ->where('status', OrderStatus::ReadyToShip)
             ->where(function ($q) {
                 $q->whereDoesntHave('delivery')
-                  ->orWhereHas('delivery', fn ($d) => $d->whereNull('courier_id'));
+                    ->orWhereHas('delivery', fn($d) => $d->whereNull('courier_id'));
             })
             ->latest('id')
             ->get()
-            ->map(fn ($t) => [
+            ->map(fn($t) => [
                 'invoice_number' => $t->invoice_number,
                 'store' => $t->store->name,
                 'recipient_name' => $t->recipient_name,
@@ -127,11 +128,14 @@ class CourierController extends Controller
             'delivered_today' => Delivery::where('status', 'delivered')->whereDate('completed_at', today())->count(),
         ];
 
+        $shippingRates = ShippingRate::orderBy('city_name')->get();
+
         return Inertia::render('Admin/Couriers', [
             'stats' => $stats,
             'couriers' => $couriers,
             'deliveries' => $deliveries,
             'unassignedOrders' => $unassignedOrders,
+            'shippingRates' => $shippingRates,
             'filters' => [
                 'status' => $statusFilter,
                 'q' => $search,
@@ -162,5 +166,50 @@ class CourierController extends Controller
         );
 
         return back()->with('success', "Kurir {$courier->username} berhasil ditugaskan untuk mengantar pesanan {$transaction->invoice_number}.");
+    }
+
+    public function storeRate(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'city_name' => ['required', 'string', 'max:255', 'unique:shipping_rates,city_name'],
+            'shipping_cost' => ['required', 'numeric', 'min:0'],
+            'estimated_delivery' => ['nullable', 'string', 'max:100'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        ShippingRate::create([
+            'city_name' => $data['city_name'],
+            'shipping_cost' => $data['shipping_cost'],
+            'estimated_delivery' => $data['estimated_delivery'] ?? null,
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return back()->with('success', 'Tarif ongkir kurir berhasil ditambahkan.');
+    }
+
+    public function updateRate(Request $request, ShippingRate $rate): RedirectResponse
+    {
+        $data = $request->validate([
+            'city_name' => ['required', 'string', 'max:255', 'unique:shipping_rates,city_name,' . $rate->id],
+            'shipping_cost' => ['required', 'numeric', 'min:0'],
+            'estimated_delivery' => ['nullable', 'string', 'max:100'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $rate->update([
+            'city_name' => $data['city_name'],
+            'shipping_cost' => $data['shipping_cost'],
+            'estimated_delivery' => $data['estimated_delivery'] ?? null,
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return back()->with('success', 'Tarif ongkir kurir berhasil diperbarui.');
+    }
+
+    public function destroyRate(ShippingRate $rate): RedirectResponse
+    {
+        $rate->delete();
+
+        return back()->with('success', 'Tarif ongkir kurir berhasil dihapus.');
     }
 }

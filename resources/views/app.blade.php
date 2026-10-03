@@ -3,14 +3,16 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-    <!-- PWA Settings & Web App Manifest -->
+    <!-- PWA Fullscreen & Web App Settings -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#17231f" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="apple-mobile-web-app-title" content="RAMELA" />
     <meta name="application-name" content="RAMELA" />
     <meta name="msapplication-TileColor" content="#17231f" />
@@ -46,7 +48,7 @@
     <x-inertia::app />
 
     <!-- PWA Install Prompt Banner -->
-    <div id="pwa-install-banner" class="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#17231f] border border-[#0d685b]/60 text-[#f3f2e7] p-4 rounded-2xl shadow-2xl z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none flex items-start gap-3">
+    <div id="pwa-install-banner" class="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-96 bg-[#17231f] border border-[#0d685b]/60 text-[#f3f2e7] p-4 rounded-2xl shadow-2xl z-50 transform translate-y-32 opacity-0 transition-all duration-300 pointer-events-none flex items-start gap-3">
         <div class="w-12 h-12 rounded-xl bg-[#0d685b] flex items-center justify-center shrink-0 shadow">
             <img src="/icons/icon-192x192.png" alt="RAMELA" class="w-8 h-8 rounded-lg" />
         </div>

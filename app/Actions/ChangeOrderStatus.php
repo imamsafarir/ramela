@@ -37,7 +37,7 @@ class ChangeOrderStatus
                 $this->refundAndRestock($locked, $by);
             }
 
-            if ($to === OrderStatus::ReadyToShip) {
+            if ($to === OrderStatus::ReadyToShip && ($locked->delivery_type ?? 'courier') === 'courier') {
                 \App\Models\Delivery::firstOrCreate(
                     ['transaction_id' => $locked->id],
                     ['status' => 'waiting_pickup']
