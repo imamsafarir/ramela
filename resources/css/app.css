@@ -99,3 +99,9 @@ html, body {
 .content-bottom-safe {
     padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
+
+/* Midtrans Snap popup modal full-screen styling inside PWA */
+#snap-midtrans {
+    z-index: 999999 !important;
+}
+

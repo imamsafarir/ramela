@@ -22,6 +22,16 @@ class MidtransService
         return $this->settings->bool('midtrans.is_production');
     }
 
+    public function clientKey(): ?string
+    {
+        return $this->settings->get('midtrans.client_key');
+    }
+
+    public function snapJsUrl(): string
+    {
+        return $this->snapUrl() . '/snap/snap.js';
+    }
+
     /** @return array{token:string, redirect_url:string} */
     public function createSnap(TopupHistory $topup, string $finishUrl): array
     {

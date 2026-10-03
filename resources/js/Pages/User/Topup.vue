@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
-import { computed, ref } from "vue";
+import axios from "axios";
+import { computed, onMounted, ref } from "vue";
 import UserLayout from "../../Layouts/UserLayout.vue";
 import { fmtDate, rupiah } from "../../utils/format";
 
@@ -10,6 +11,14 @@ const props = defineProps({
     ready: Boolean,
     min: Number,
     max: Number,
+    clientKey: {
+        type: String,
+        default: null,
+    },
+    snapJsUrl: {
+        type: String,
+        default: null,
+    },
     history: {
         type: Array,
         default: () => [],
@@ -26,7 +35,131 @@ const user = computed(() => page.props.auth?.user);
 const form = useForm({ amount: 50000 });
 const presets = [25000, 50000, 100000, 250000, 500000, 1000000];
 
-const submit = () => form.post("/topup");
+const isSnapLoaded = ref(false);
+const isPaying = ref(false);
+const paymentError = ref("");
+
+const loadSnapScript = () => {
+    return new Promise((resolve) => {
+        if (typeof window !== "undefined" && window.snap) {
+            isSnapLoaded.value = true;
+            resolve(window.snap);
+            return;
+        }
+
+        const scriptId = "midtrans-snap-script";
+        let script = document.getElementById(scriptId);
+
+        if (script) {
+            if (window.snap) {
+                isSnapLoaded.value = true;
+                resolve(window.snap);
+                return;
+            }
+            script.addEventListener("load", () => {
+                isSnapLoaded.value = true;
+                resolve(window.snap);
+            });
+            script.addEventListener("error", () => resolve(null));
+            return;
+        }
+
+        if (!props.snapJsUrl) {
+            resolve(null);
+            return;
+        }
+
+        script = document.createElement("script");
+        script.id = scriptId;
+        script.src = props.snapJsUrl;
+        if (props.clientKey) {
+            script.setAttribute("data-client-key", props.clientKey);
+        }
+        script.async = true;
+        script.onload = () => {
+            isSnapLoaded.value = true;
+            resolve(window.snap);
+        };
+        script.onerror = () => {
+            resolve(null);
+        };
+        document.body.appendChild(script);
+    });
+};
+
+onMounted(() => {
+    if (props.ready && props.snapJsUrl) {
+        loadSnapScript();
+    }
+});
+
+const submit = async () => {
+    if (isPaying.value || !props.ready) return;
+    paymentError.value = "";
+    form.clearErrors();
+
+    if (!form.amount || form.amount < props.min || form.amount > props.max) {
+        form.setError("amount", `Nominal harus antara ${rupiah(props.min)} dan ${rupiah(props.max)}`);
+        return;
+    }
+
+    isPaying.value = true;
+
+    try {
+        await loadSnapScript();
+
+        const response = await axios.post(
+            "/topup",
+            { amount: form.amount },
+            { headers: { Accept: "application/json" } }
+        );
+
+        const { token, redirect_url, order_id } = response.data;
+
+        if (window.snap && token) {
+            window.snap.pay(token, {
+                onSuccess: (result) => {
+                    isPaying.value = false;
+                    const finalOrderId = result?.order_id || order_id;
+                    router.visit(`/topup?order_id=${encodeURIComponent(finalOrderId)}`, {
+                        preserveScroll: true,
+                    });
+                },
+                onPending: (result) => {
+                    isPaying.value = false;
+                    const finalOrderId = result?.order_id || order_id;
+                    router.visit(`/topup?order_id=${encodeURIComponent(finalOrderId)}`, {
+                        preserveScroll: true,
+                    });
+                },
+                onError: (result) => {
+                    isPaying.value = false;
+                    paymentError.value = result?.status_message || "Pembayaran dibatalkan atau gagal diproses.";
+                    router.reload({ preserveScroll: true });
+                },
+                onClose: () => {
+                    isPaying.value = false;
+                    router.reload({ preserveScroll: true });
+                },
+            });
+        } else if (redirect_url) {
+            // Fallback bila snap.js diblokir
+            window.location.href = redirect_url;
+        } else {
+            isPaying.value = false;
+            paymentError.value = "Gagal memproses sesi pembayaran Midtrans.";
+        }
+    } catch (err) {
+        isPaying.value = false;
+        if (err.response?.data?.errors?.amount) {
+            form.setError("amount", err.response.data.errors.amount[0]);
+        } else if (err.response?.data?.message) {
+            paymentError.value = err.response.data.message;
+        } else {
+            paymentError.value = "Terjadi kesalahan koneksi saat memproses top-up.";
+        }
+    }
+};
 
 const syncingId = ref(null);
 const sync = (orderId) => {
@@ -152,6 +285,23 @@ const walletTypeLabel = (type) => {
                 ⚠️ Gateway pembayaran belum siap saat ini. Silakan hubungi admin atau gunakan saldo yang ada.
             </div>
 
+            <div
+                v-if="paymentError"
+                class="mt-4 flex items-start justify-between gap-3 rounded-2xl border border-rose-500/40 bg-rose-950/40 p-4 text-xs text-rose-200"
+            >
+                <div class="flex items-center gap-2">
+                    <span class="text-base">⚠️</span>
+                    <span>{{ paymentError }}</span>
+                </div>
+                <button
+                    type="button"
+                    class="text-rose-300 hover:text-white font-bold px-1 transition"
+                    @click="paymentError = ''"
+                >
+                    ✕
+                </button>
+            </div>
+
             <form class="mt-5 space-y-4" @submit.prevent="submit">
                 <div>
                     <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80" for="amount">
@@ -201,11 +351,11 @@ const walletTypeLabel = (type) => {
                 </div>
 
                 <button
-                    :disabled="form.processing || !ready"
+                    :disabled="isPaying || form.processing || !ready"
                     type="submit"
                     class="w-full rounded-xl bg-[#0d685b] hover:bg-[#117c6d] py-3 text-center text-sm font-black text-[#f3f2e7] shadow-md shadow-[#0d685b]/30 transition disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 active:scale-98"
                 >
-                    <span v-if="form.processing">Memproses Pembayaran...</span>
+                    <span v-if="isPaying || form.processing">Menyiapkan Pembayaran Midtrans...</span>
                     <span v-else>💳 Bayar Sekarang via Midtrans (QRIS / VA / E-Wallet)</span>
                 </button>
             </form>

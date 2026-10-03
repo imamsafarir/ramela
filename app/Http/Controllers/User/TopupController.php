@@ -32,6 +32,8 @@ class TopupController extends Controller
             'ready' => $midtrans->isConfigured(),
             'min' => self::MIN,
             'max' => self::MAX,
+            'clientKey' => $midtrans->clientKey(),
+            'snapJsUrl' => $midtrans->snapJsUrl(),
             'history' => $user->topupHistories()->latest()->limit(25)
                 ->get(['midtrans_order_id', 'amount', 'status', 'payment_type', 'created_at']),
             'walletHistory' => $user->walletTransactions()->latest('id')->limit(25)
@@ -53,6 +55,10 @@ class TopupController extends Controller
         ]);
 
         if (! $midtrans->isConfigured()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Pembayaran belum tersedia. Hubungi admin.'], 422);
+            }
+
             return back()->withErrors(['amount' => 'Pembayaran belum tersedia. Hubungi admin.']);
         }
 
@@ -67,12 +73,24 @@ class TopupController extends Controller
         } catch (RuntimeException $e) {
             $topup->update(['status' => 'failed']);
 
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
             return back()->withErrors(['amount' => $e->getMessage()]);
         }
 
         $topup->update(['snap_token' => $snap['token']]);
 
-        // Redirect penuh ke halaman pembayaran Midtrans (di luar SPA).
+        if ($request->expectsJson()) {
+            return response()->json([
+                'token' => $snap['token'],
+                'redirect_url' => $snap['redirect_url'],
+                'order_id' => $topup->midtrans_order_id,
+            ]);
+        }
+
+        // Redirect penuh ke halaman pembayaran Midtrans (di luar SPA / fallback).
         return Inertia::location($snap['redirect_url']);
     }
 

@@ -66,6 +66,26 @@ test('top-up membuat transaksi pending lalu mengarahkan ke Midtrans', function (
     expect($this->user->fresh()->saldo)->toBe('0.00'); // saldo belum bertambah sebelum pembayaran
 });
 
+test('top-up via AJAX/JSON mengembalikan token dan redirect_url untuk popup Snap di PWA', function () {
+    configureMidtrans();
+    Http::fake(['app.sandbox.midtrans.com/*' => Http::response([
+        'token' => 'tok_pwa_456',
+        'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/tok_pwa_456',
+    ], 201)]);
+
+    $response = $this->actingAs($this->user)->postJson('/topup', ['amount' => 75000]);
+
+    $response->assertOk()
+        ->assertJson([
+            'token' => 'tok_pwa_456',
+            'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/tok_pwa_456',
+        ])
+        ->assertJsonStructure(['token', 'redirect_url', 'order_id']);
+
+    $t = TopupHistory::first();
+    expect($t->status)->toBe('pending')->and($t->amount)->toBe('75000.00')->and($t->snap_token)->toBe('tok_pwa_456');
+});
+
 test('top-up ditolak bila Midtrans belum dikonfigurasi atau nominal tidak valid', function () {
     $this->actingAs($this->user)->post('/topup', ['amount' => 50000])->assertSessionHasErrors('amount');
 
