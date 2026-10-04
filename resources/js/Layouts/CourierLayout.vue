@@ -7,52 +7,88 @@ const user = computed(() => page.props.auth?.user);
 const flash = computed(() => page.props.flash?.success);
 
 // State Izin & Akses Lokasi (GPS)
-const locationStatus = ref("checking"); // 'checking' | 'granted' | 'denied' | 'unsupported'
+const locationStatus = ref("prompt"); // 'prompt' | 'granted' | 'denied' | 'unsupported'
 const isRequesting = ref(false);
 const errorMessage = ref("");
 const coords = ref({ lat: null, lng: null });
 let watchId = null;
 
+// Cek apakah konteks aman (HTTPS atau localhost)
+const isSecure = typeof window !== "undefined" ? (window.isSecureContext !== false) : true;
+
+const handleSuccess = (pos) => {
+    coords.value = {
+        lat: Number(pos.coords.latitude.toFixed(6)),
+        lng: Number(pos.coords.longitude.toFixed(6)),
+    };
+    locationStatus.value = "granted";
+    isRequesting.value = false;
+    errorMessage.value = "";
+    startWatch();
+};
+
+const handleFailure = (err) => {
+    isRequesting.value = false;
+    locationStatus.value = "denied";
+
+    if (err.code === 1 /* PERMISSION_DENIED */) {
+        errorMessage.value =
+            "Izin lokasi ditolak oleh browser. Di iPhone (Safari), buka Pengaturan iOS > Safari > Lokasi > Izinkan. Di Android (Chrome), buka Ikon Gembok / Pengaturan Situs > Lokasi > Izinkan.";
+    } else if (err.code === 2 /* POSITION_UNAVAILABLE */) {
+        errorMessage.value =
+            "Sinyal GPS tidak terdeteksi. Pastikan Layanan Lokasi (GPS) di Pengaturan ponsel Anda telah diaktifkan.";
+    } else if (err.code === 3 /* TIMEOUT */) {
+        errorMessage.value =
+            "Waktu pencarian GPS habis. Anda dapat mencoba menekan tombol kembali atau menggunakan opsi 'Masuk dengan Lokasi Toko' di bawah.";
+    } else {
+        errorMessage.value = err.message || "Gagal membaca koordinat GPS perangkat.";
+    }
+};
+
 const requestLocation = () => {
     if (!("geolocation" in navigator)) {
         locationStatus.value = "unsupported";
         errorMessage.value =
-            "Perangkat atau browser Anda tidak mendukung fitur Geolocation / GPS.";
+            "Perangkat atau browser ini tidak mendukung fitur Geolocation / GPS.";
         return;
+    }
+
+    if (!isSecure) {
+        errorMessage.value =
+            "Perhatian: Koneksi saat ini menggunakan HTTP biasa. Browser iPhone & Android membatasi GPS pada koneksi aman (HTTPS). Jika GPS tidak merespons, silakan gunakan tombol 'Masuk dengan Lokasi Toko'.";
     }
 
     isRequesting.value = true;
     errorMessage.value = "";
 
+    // 1. Coba dengan akurasi tinggi terlebih dahulu (timeout 5 detik)
+    // 2. Jika gagal atau timeout (sering terjadi di dalam ruangan), otomatis coba lagi dengan low accuracy (Wi-Fi/seluler)
     navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            coords.value = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-            };
-            locationStatus.value = "granted";
-            isRequesting.value = false;
-            startWatch();
-        },
+        handleSuccess,
         (err) => {
-            isRequesting.value = false;
-            locationStatus.value = "denied";
-            if (err.code === err.PERMISSION_DENIED) {
-                errorMessage.value =
-                    "Izin lokasi ditolak. Silakan izinkan akses lokasi pada browser Anda.";
-            } else if (err.code === err.POSITION_UNAVAILABLE) {
-                errorMessage.value =
-                    "Sinyal GPS tidak terdeteksi. Pastikan GPS/Location perangkat telah diaktifkan.";
-            } else if (err.code === err.TIMEOUT) {
-                errorMessage.value =
-                    "Waktu permintaan lokasi habis. Silakan coba klik tombol kembali.";
-            } else {
-                errorMessage.value =
-                    err.message || "Gagal membaca koordinat GPS.";
+            // Jika izin ditolak secara permanen oleh pengguna, jangan retry
+            if (err.code === 1) {
+                handleFailure(err);
+                return;
             }
+
+            // Retry dengan enableHighAccuracy: false (sangat responsif di mobile via Wi-Fi/BTS seluler)
+            navigator.geolocation.getCurrentPosition(
+                handleSuccess,
+                handleFailure,
+                { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+            );
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
     );
+};
+
+// Opsi fallback jika GPS di ponsel sedang bermasalah atau koneksi HTTP
+const useFallbackLocation = () => {
+    coords.value = { lat: -6.989720, lng: 110.421930 };
+    locationStatus.value = "granted";
+    isRequesting.value = false;
+    errorMessage.value = "";
 };
 
 const startWatch = () => {
@@ -61,22 +97,48 @@ const startWatch = () => {
     watchId = navigator.geolocation.watchPosition(
         (pos) => {
             coords.value = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
+                lat: Number(pos.coords.latitude.toFixed(6)),
+                lng: Number(pos.coords.longitude.toFixed(6)),
             };
             if (locationStatus.value !== "granted") {
                 locationStatus.value = "granted";
             }
         },
         (err) => {
-            console.warn("Watch location error:", err.message);
+            console.warn("Watch location notice:", err.message);
         },
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );
 };
 
 onMounted(() => {
-    requestLocation();
+    // Pada mobile browser, JANGAN langsung aktifkan isRequesting = true tanpa interaksi pengguna,
+    // karena iOS Safari memerlukan "user gesture" (sentuhan tombol) untuk memunculkan prompt izin lokasi.
+    if ("permissions" in navigator && navigator.permissions?.query) {
+        navigator.permissions
+            .query({ name: "geolocation" })
+            .then((result) => {
+                if (result.state === "granted") {
+                    // Jika sebelumnya sudah pernah diizinkan, baca posisi secara otomatis
+                    requestLocation();
+                } else {
+                    locationStatus.value = "prompt";
+                    isRequesting.value = false;
+                }
+                result.onchange = () => {
+                    if (result.state === "granted") requestLocation();
+                };
+            })
+            .catch(() => {
+                locationStatus.value = "prompt";
+                isRequesting.value = false;
+            });
+    } else {
+        // iOS Safari tidak mendukung Permissions API untuk geolocation
+        // Biarkan tombol aktif dan siap ditekan oleh pengguna
+        locationStatus.value = "prompt";
+        isRequesting.value = false;
+    }
 });
 
 onUnmounted(() => {
@@ -89,7 +151,7 @@ onUnmounted(() => {
 provide("courierCoords", coords);
 provide(
     "locationGranted",
-    computed(() => locationStatus.value === "granted"),
+    computed(() => locationStatus.value === "granted")
 );
 
 const logout = () => router.post("/logout");
@@ -231,26 +293,48 @@ const logout = () => router.post("/logout");
                     </p>
                 </div>
 
+                <!-- INFO JIKA DI BROWSER HP DENGAN HTTP NON-HTTPS -->
+                <div
+                    v-if="!isSecure"
+                    class="mt-3 rounded-xl bg-amber-950/40 border border-amber-500/30 p-2.5 text-left text-[11px] text-amber-200"
+                >
+                    <p class="font-bold">📱 Tips Browser HP:</p>
+                    <p class="mt-0.5">
+                        Jika browser ponsel tidak memunculkan popup izin GPS (karena koneksi HTTP biasa), silakan gunakan tombol <strong>"Masuk dengan Lokasi Toko"</strong> untuk langsung mengakses tugas pengantaran.
+                    </p>
+                </div>
+
                 <!-- TOMBOL AKTIVASI LOKASI -->
-                <div class="mt-6 space-y-2">
+                <div class="mt-6 space-y-3">
                     <button
-                        :disabled="isRequesting"
-                        class="w-full rounded-xl bg-[#0d685b] hover:bg-[#117c6d] py-3 text-xs font-bold text-[#f3f2e7] shadow-md transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                        type="button"
+                        class="w-full rounded-2xl bg-[#0d685b] hover:bg-[#117c6d] active:scale-95 py-3.5 px-4 text-xs sm:text-sm font-bold text-[#f3f2e7] shadow-xl transition flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
                         @click="requestLocation"
                     >
                         <span
                             v-if="isRequesting"
-                            class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent"
+                            class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
                         ></span>
                         <span>{{
                             isRequesting
-                                ? "Mencari Titik GPS..."
+                                ? "Mencari Titik GPS (Harap Tunggu)..."
                                 : "Aktifkan & Izinkan Lokasi Sekarang 📍"
                         }}</span>
                     </button>
 
+                    <!-- TOMBOL OPSI CADANGAN (Sangat berguna di iPhone/Android saat koneksi HTTP / sinyal lemah) -->
                     <button
-                        class="w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] py-2.5 text-xs font-semibold text-[#f3f2e7] hover:bg-[#0d685b]/20 transition"
+                        type="button"
+                        class="w-full rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 py-2.5 px-4 text-xs font-bold text-amber-200 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                        @click="useFallbackLocation"
+                    >
+                        <span>🏪</span>
+                        <span>Masuk dengan Lokasi Toko (Mode Cepat)</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] py-2.5 text-xs font-semibold text-[#f3f2e7]/80 hover:bg-[#0d685b]/20 transition cursor-pointer"
                         @click="logout"
                     >
                         Keluar dari Akun
