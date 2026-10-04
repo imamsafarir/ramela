@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
+import { ref } from "vue";
 import AdminLayout from "../../Layouts/AdminLayout.vue";
 import DeliveryMap from "../../Components/DeliveryMap.vue";
 import { fmtDate, rupiah, statusClass } from "../../utils/format";
@@ -288,7 +289,7 @@ const apply = (a) => {
                 </div>
 
                 <div
-                    v-if="order.delivery.photos?.length"
+                    v-if="order.delivery?.photos?.length"
                     class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 sm:p-5 shadow-lg text-[#f3f2e7]"
                 >
                     <h2
@@ -298,7 +299,7 @@ const apply = (a) => {
                     </h2>
                     <div class="grid grid-cols-2 gap-4">
                         <div
-                            v-for="p in order.delivery.photos"
+                            v-for="p in (order.delivery?.photos || [])"
                             :key="p.type"
                             class="space-y-1"
                         >

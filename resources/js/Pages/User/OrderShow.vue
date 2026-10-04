@@ -198,7 +198,7 @@ const waLink = computed(() => {
 
         <!-- Info Kurir & Kontak Cepat -->
         <div
-            v-if="order.delivery.courier_name"
+            v-if="order.delivery?.courier_name"
             class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/20 bg-[#1c2a25] px-5 py-3.5"
         >
             <div class="flex items-center gap-3">
@@ -213,14 +213,14 @@ const waLink = computed(() => {
                             >Kurir Pengantar:</span
                         >
                         <span class="text-sm font-bold text-[#f3f2e7]">{{
-                            order.delivery.courier_name
+                            order.delivery?.courier_name
                         }}</span>
                     </div>
                     <p
-                        v-if="order.delivery.courier_phone"
+                        v-if="order.delivery?.courier_phone"
                         class="text-xs text-[#f3f2e7]/60"
                     >
-                        Telp: {{ order.delivery.courier_phone }}
+                        Telp: {{ order.delivery?.courier_phone }}
                     </p>
                 </div>
             </div>
@@ -238,8 +238,8 @@ const waLink = computed(() => {
                     <span>Chat WhatsApp Kurir</span>
                 </a>
                 <a
-                    v-if="order.delivery.courier_phone"
-                    :href="'tel:' + order.delivery.courier_phone"
+                    v-if="order.delivery?.courier_phone"
+                    :href="'tel:' + order.delivery?.courier_phone"
                     class="inline-flex items-center gap-1.5 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3 py-1.5 text-xs font-semibold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/20 transition"
                 >
                     <span>📞</span>
@@ -251,11 +251,11 @@ const waLink = computed(() => {
         <!-- PETA RUTE JALAN INTERAKTIF -->
         <div class="p-4 sm:p-5">
             <DeliveryMap
-                :courier-lat="order.delivery.current_lat"
-                :courier-lng="order.delivery.current_lng"
+                :courier-lat="order.delivery?.current_lat"
+                :courier-lng="order.delivery?.current_lng"
                 :dest-lat="order.shipping_latitude"
                 :dest-lng="order.shipping_longitude"
-                :route-history="order.delivery.locations || []"
+                :route-history="order.delivery?.locations || []"
                 :recipient-name="order.recipient_name"
                 :store-name="order.store"
             />
@@ -263,7 +263,7 @@ const waLink = computed(() => {
 
         <!-- Foto Bukti Pickup & Dropoff Validasi -->
         <div
-            v-if="order.delivery.photos?.length"
+            v-if="order.delivery?.photos?.length"
             class="border-t border-[#0d685b]/20 bg-[#131d1a]/50 p-5"
         >
             <h3
@@ -273,7 +273,7 @@ const waLink = computed(() => {
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
-                    v-for="p in order.delivery.photos"
+                    v-for="p in (order.delivery?.photos || [])"
                     :key="p.type"
                     class="overflow-hidden rounded-xl border border-[#0d685b]/30 bg-[#1c2a25] p-3 shadow-lg"
                 >
