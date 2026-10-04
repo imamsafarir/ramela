@@ -11,17 +11,9 @@ use Inertia\Response;
 
 class FaqController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('Admin/Faqs', [
-            'faqs' => Faq::orderBy('sort_order')->orderBy('id')->get()->map(fn ($f) => [
-                'id' => $f->id,
-                'question' => $f->question,
-                'answer' => $f->answer,
-                'sort_order' => $f->sort_order,
-                'is_active' => $f->is_active,
-            ]),
-        ]);
+        return app(BlogController::class)->index($request->merge(['tab' => 'faqs']));
     }
 
     public function store(Request $request): RedirectResponse

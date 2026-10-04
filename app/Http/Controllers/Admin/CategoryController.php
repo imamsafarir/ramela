@@ -14,13 +14,9 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('Admin/Categories', [
-            'stores' => Store::orderBy('sort_order')->get(['id', 'name']),
-            'categories' => Category::withCount('products')->with('store:id,name')->orderBy('store_id')->orderBy('name')->get()
-                ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'store' => $c->store->name, 'products_count' => $c->products_count]),
-        ]);
+        return app(ProductController::class)->index($request->merge(['tab' => 'categories']));
     }
 
     public function store(Request $request): RedirectResponse

@@ -120,4 +120,3 @@ class PromoSeeder extends Seeder
         );
     }
 }
-

@@ -6,9 +6,42 @@ import { fmtDate, rupiah, statusClass } from "../../utils/format";
 
 defineOptions({ layout: AdminLayout });
 
-const props = defineProps({ order: Object, actions: Array });
+const props = defineProps({
+    order: Object,
+    actions: Array,
+    couriers: {
+        type: Array,
+        default: () => [],
+    },
+});
 
 const form = useForm({ status: "", note: "" });
+
+const selectedCourierId = ref(props.order.delivery?.courier_id || "");
+const showReassign = ref(false);
+const isAssigning = ref(false);
+
+const assignCourier = () => {
+    if (!selectedCourierId.value) return;
+    isAssigning.value = true;
+    router.post(
+        "/admin/kurir/assign",
+        {
+            invoice_number: props.order.invoice_number,
+            courier_id: selectedCourierId.value,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                showReassign.value = false;
+                isAssigning.value = false;
+            },
+            onFinish: () => {
+                isAssigning.value = false;
+            },
+        }
+    );
+};
 
 const apply = (a) => {
     const msg =
@@ -72,6 +105,10 @@ const apply = (a) => {
                 :class="
                     a.value === 'cancelled'
                         ? 'bg-rose-700/80 hover:bg-rose-600 border border-rose-500/30'
+                        : a.value === 'ready_for_pickup'
+                        ? 'bg-teal-600 hover:bg-teal-500 ring-1 ring-teal-300/40 shadow-teal-900/40'
+                        : a.value === 'completed' && order.delivery_type === 'pickup'
+                        ? 'bg-emerald-600 hover:bg-emerald-500 ring-1 ring-emerald-300/40 shadow-emerald-900/40'
                         : 'bg-[#0d685b] hover:bg-[#0d685b]/90 shadow-[#0d685b]/30'
                 "
                 @click="apply(a)"
@@ -160,20 +197,91 @@ const apply = (a) => {
         </div>
 
         <div class="space-y-6">
-            <!-- Pelacakan Kurir Real-Time & Peta -->
-            <div v-if="order.delivery" class="space-y-4">
+            <!-- Penunjukan & Penugasan Kurir Pengantar -->
+            <div
+                v-if="order.delivery_type === 'courier'"
+                class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg text-[#f3f2e7] space-y-3"
+            >
+                <div class="flex items-center justify-between border-b border-[#0d685b]/20 pb-2.5">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-[#0d685b] flex items-center gap-2">
+                        <span>🛵</span> Penunjukan & Personil Kurir
+                    </h2>
+                    <span
+                        v-if="order.delivery?.courier_name"
+                        class="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 text-xs font-semibold"
+                    >
+                        ✓ Sudah Ditugaskan
+                    </span>
+                    <span
+                        v-else
+                        class="rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 text-xs font-semibold animate-pulse"
+                    >
+                        ⚠️ Menunggu Kurir
+                    </span>
+                </div>
+
+                <!-- Info Kurir Saat Ini -->
+                <div
+                    v-if="order.delivery?.courier_name"
+                    class="flex flex-wrap items-center justify-between gap-3 bg-[#131d1a] p-3.5 rounded-xl border border-[#0d685b]/20"
+                >
+                    <div>
+                        <p class="text-[11px] text-[#f3f2e7]/70">Kurir Pengantar Bertugas:</p>
+                        <p class="text-sm font-bold text-emerald-400">👤 {{ order.delivery.courier_name }}</p>
+                        <p v-if="order.delivery.courier_phone" class="text-xs text-[#f3f2e7]/60">
+                            Telp: {{ order.delivery.courier_phone }}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        @click="showReassign = !showReassign"
+                        class="rounded-xl border border-[#0d685b]/40 bg-[#1c2a25] px-3 py-1.5 text-xs font-semibold text-[#f3f2e7] hover:bg-[#131d1a] transition cursor-pointer"
+                    >
+                        {{ showReassign ? 'Tutup Pilihan' : 'Ganti / Tunjuk Ulang' }}
+                    </button>
+                </div>
+
+                <!-- Form Penunjukan Kurir -->
+                <div
+                    v-if="!order.delivery?.courier_name || showReassign"
+                    class="space-y-2.5 pt-1"
+                >
+                    <p class="text-xs text-[#f3f2e7]/80">
+                        {{ order.delivery?.courier_name ? 'Pilih kurir pengganti:' : 'Pilih personil kurir untuk ditugaskan mengantar pesanan ini:' }}
+                    </p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select
+                            v-model="selectedCourierId"
+                            class="flex-1 min-w-[200px] rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-xs text-[#f3f2e7] focus:border-[#0d685b] focus:outline-none"
+                        >
+                            <option value="">-- Pilih Kurir Pengantar --</option>
+                            <option v-for="c in couriers" :key="c.id" :value="c.id">
+                                {{ c.name }} ({{ c.username }}) {{ c.is_busy ? '[Sedang Mengantar]' : '[🟢 Siap]' }}
+                            </option>
+                        </select>
+                        <button
+                            type="button"
+                            :disabled="!selectedCourierId || isAssigning"
+                            @click="assignCourier"
+                            class="rounded-xl bg-[#0d685b] px-4 py-2 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/90 disabled:opacity-50 transition cursor-pointer"
+                        >
+                            {{ isAssigning ? 'Menugaskan...' : '🚀 Tugaskan Kurir' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pelacakan Kurir Real-Time & Peta Rute Jalan -->
+            <div v-if="order.delivery_type === 'courier'" class="space-y-4">
                 <div
                     class="rounded-2xl border border-[#0d685b]/30 overflow-hidden shadow-lg"
                 >
                     <DeliveryMap
-                        v-if="
-                            order.status === 'shipping' ||
-                            order.status === 'completed'
-                        "
-                        :courier-lat="order.delivery.current_lat"
-                        :courier-lng="order.delivery.current_lng"
+                        :courier-lat="order.delivery?.current_lat"
+                        :courier-lng="order.delivery?.current_lng"
                         :dest-lat="order.shipping_latitude"
                         :dest-lng="order.shipping_longitude"
+                        :route-history="order.delivery?.locations || []"
                         :recipient-name="order.recipient_name"
                         :store-name="order.store"
                     />
@@ -279,10 +387,38 @@ const apply = (a) => {
                 </div>
                 <div
                     v-else
-                    class="mt-2 text-xs text-emerald-300 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30"
+                    class="mt-2 space-y-2"
                 >
-                    🏪 Pelanggan akan mengambil sendiri pesanan langsung ke
-                    lokasi toko {{ order.store }}.
+                    <div class="text-xs text-emerald-300 bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30">
+                        🏪 Pelanggan akan mengambil sendiri pesanan langsung ke lokasi toko {{ order.store }}.
+                    </div>
+                    <div
+                        v-if="order.status === 'processed'"
+                        class="text-xs text-indigo-200 bg-indigo-950/60 p-2.5 rounded-xl border border-indigo-500/40 flex items-start gap-2"
+                    >
+                        <span class="text-sm">👨‍🍳</span>
+                        <div>
+                            <strong class="text-indigo-300 block mb-0.5">Sedang Diproses Toko</strong>
+                            Jika barang sudah selesai disiapkan dan siap diambil pelanggan, klik tombol <strong>"✓ Tandai Siap Dijemput"</strong> di atas.
+                        </div>
+                    </div>
+                    <div
+                        v-else-if="order.status === 'ready_for_pickup'"
+                        class="text-xs text-teal-200 bg-teal-950/60 p-3 rounded-xl border border-teal-500/40 flex items-start gap-2"
+                    >
+                        <span class="text-base">🔔</span>
+                        <div>
+                            <strong class="text-teal-300 block mb-0.5">Pesanan Siap Dijemput</strong>
+                            Pesanan telah selesai diproses. Saat pelanggan datang mengambil barang di toko, silakan klik tombol <strong>"✓ Tandai Selesai"</strong> di atas.
+                        </div>
+                    </div>
+                    <div
+                        v-else-if="order.status === 'completed'"
+                        class="text-xs text-emerald-200 bg-emerald-950/60 p-2.5 rounded-xl border border-emerald-500/30 flex items-center gap-2"
+                    >
+                        <span>✅</span>
+                        <span>Pesanan telah berhasil diambil oleh pelanggan di toko (Selesai).</span>
+                    </div>
                 </div>
 
                 <p

@@ -11,7 +11,35 @@ const props = defineProps({
     activeDelivery: Object,
     availableOrders: Array,
     history: Array,
+    stores: {
+        type: Array,
+        default: () => [],
+    },
 });
+
+// Filter & Pencarian Orderan Tersedia
+const searchAvailable = ref('');
+const storeFilter = ref('');
+
+const filteredAvailableOrders = computed(() => {
+    return (props.availableOrders || []).filter((o) => {
+        const matchesStore = !storeFilter.value || String(o.store_id) === String(storeFilter.value);
+        const q = searchAvailable.value.toLowerCase().trim();
+        const matchesQ = !q ||
+            o.invoice_number?.toLowerCase().includes(q) ||
+            o.recipient_name?.toLowerCase().includes(q) ||
+            o.shipping_address?.toLowerCase().includes(q) ||
+            o.recipient_phone?.includes(q);
+        return matchesStore && matchesQ;
+    });
+});
+
+const formatWeight = (w) => {
+    const num = Number(w || 1000);
+    return num >= 1000
+        ? (num / 1000).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' kg'
+        : num.toLocaleString('id-ID') + ' g';
+};
 
 // Koordinat yang diinjeksi dari CourierLayout (sudah dipastikan GPS aktif)
 const layoutCoords = inject('courierCoords', null);
@@ -217,6 +245,13 @@ const claimOrder = (invoice) => {
     }
 };
 
+// Lepas order (kembalikan ke antrean jika belum pickup)
+const releaseOrder = (invoice) => {
+    if (confirm(`Apakah Anda yakin ingin melepas tugas ${invoice}? Order ini akan dikembalikan ke antrean pengantaran agar dapat diambil oleh kurir lain.`)) {
+        router.post(`/kurir/tugas/${invoice}/lepas`);
+    }
+};
+
 // Background GPS Tracker saat en_route
 const startGpsTracking = () => {
     if (!navigator.geolocation) return;
@@ -273,10 +308,12 @@ onUnmounted(() => {
     <div v-if="activeDelivery" class="rounded-2xl border-2 border-[#0d685b] bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[#0d685b]/30 pb-4">
             <div>
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0d685b]/40 px-3 py-1 text-xs font-semibold text-[#f3f2e7] border border-[#0d685b]/60 uppercase tracking-wider">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Tugas Aktif ({{ activeDelivery.status === 'waiting_pickup' ? 'Ambil Barang di Toko' : 'Dalam Perjalanan' }})
-                </span>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-[#0d685b]/40 px-3 py-1 text-xs font-semibold text-[#f3f2e7] border border-[#0d685b]/60 uppercase tracking-wider">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Tugas Aktif ({{ activeDelivery.status === 'waiting_pickup' ? 'Ambil Barang di Toko' : 'Dalam Perjalanan' }})
+                    </span>
+                </div>
                 <h2 class="mt-2 text-2xl font-black text-[#f3f2e7] tracking-tight">{{ activeDelivery.transaction.invoice_number }}</h2>
                 <p class="text-sm text-[#f3f2e7]/70 font-medium">🏪 Toko: <span class="text-[#f3f2e7]">{{ activeDelivery.transaction.store }}</span></p>
             </div>
@@ -284,6 +321,7 @@ onUnmounted(() => {
                 <!-- Tahap 1: Ambil Barang (Pick-up) -->
                 <template v-if="activeDelivery.status === 'waiting_pickup'">
                     <button
+                        type="button"
                         class="inline-flex items-center gap-2 rounded-xl bg-[#0d685b] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 hover:bg-[#0d685b]/90 transition active:scale-95"
                         @click="openUploadModal('pickup', 'camera')"
                     >
@@ -291,17 +329,28 @@ onUnmounted(() => {
                         <span>Foto Pickup (Kamera)</span>
                     </button>
                     <button
+                        type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#f3f2e7] hover:border-[#0d685b] hover:bg-[#1c2a25] transition active:scale-95"
                         @click="openUploadModal('pickup', 'file')"
                     >
                         <span>📁</span>
                         <span>Unggah Manual (Galeri)</span>
                     </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-rose-300 hover:bg-rose-500/20 hover:border-rose-500 transition active:scale-95"
+                        title="Kembalikan order ke antrean jika belum mengambil barang"
+                        @click="releaseOrder(activeDelivery.transaction.invoice_number)"
+                    >
+                        <span>✕</span>
+                        <span>Lepas Tugas</span>
+                    </button>
                 </template>
 
                 <!-- Tahap 3: Selesaikan (Drop-off) -->
                 <template v-if="activeDelivery.status === 'en_route'">
                     <button
+                        type="button"
                         class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500 transition active:scale-95"
                         @click="openUploadModal('dropoff', 'camera')"
                     >
@@ -309,6 +358,7 @@ onUnmounted(() => {
                         <span>Selesaikan (Kamera)</span>
                     </button>
                     <button
+                        type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#f3f2e7] hover:border-[#0d685b] hover:bg-[#1c2a25] transition active:scale-95"
                         @click="openUploadModal('dropoff', 'file')"
                     >
@@ -345,7 +395,7 @@ onUnmounted(() => {
                         <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
                         <span>📍 GPS Pelacakan Aktif Realtime</span>
                     </div>
-                    <p class="mt-1 text-emerald-200/80 leading-relaxed">Koordinat Anda disinkronkan berkala ke server setiap 8 detik agar pembeli dapat melacak lokasi kurir secara akurat.</p>
+                    <p class="mt-1 text-emerald-200/80 leading-relaxed">Koordinat Anda disinkronkan berkala ke server setiap 8 detik agar pembeli dapat melacak garis rute & lokasi kurir secara akurat.</p>
                 </div>
             </div>
 
@@ -358,6 +408,7 @@ onUnmounted(() => {
                     :dest-lng="activeDelivery.transaction.shipping_longitude"
                     :recipient-name="activeDelivery.transaction.recipient_name"
                     :store-name="activeDelivery.transaction.store"
+                    :route-history="activeDelivery.locations || []"
                 />
             </div>
         </div>
@@ -365,46 +416,122 @@ onUnmounted(() => {
 
     <!-- DAFTAR TUGAS TERSEDIA -->
     <div class="mt-8">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
                 <h2 class="text-xl font-bold text-[#f3f2e7]">Tugas Pengantaran Siap Diambil</h2>
-                <p class="text-xs text-[#f3f2e7]/60">Pesanan yang sudah diproses admin dan menunggu kurir ramela.</p>
+                <p class="text-xs text-[#f3f2e7]/60">Pilih sendiri orderan yang ingin Anda antar sesuai rute dan ketersediaan Anda.</p>
             </div>
             <span class="rounded-full bg-[#0d685b]/30 border border-[#0d685b]/50 px-3 py-1 text-xs font-bold text-[#f3f2e7]">
-                {{ availableOrders.length }} Pesanan
+                {{ filteredAvailableOrders.length }} dari {{ availableOrders.length }} Pesanan
             </span>
         </div>
 
-        <div v-if="availableOrders.length" class="grid gap-4 md:grid-cols-2">
+        <!-- Filter & Search Bar -->
+        <div class="mb-4 grid gap-3 sm:grid-cols-3">
+            <div class="sm:col-span-2 relative">
+                <input
+                    v-model="searchAvailable"
+                    type="text"
+                    placeholder="Cari no invoice, nama penerima, no HP, atau alamat tujuan..."
+                    class="w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 pl-10 text-xs sm:text-sm text-[#f3f2e7] placeholder-[#f3f2e7]/40 focus:border-[#0d685b] focus:outline-none focus:ring-1 focus:ring-[#0d685b]"
+                />
+                <span class="absolute left-3.5 top-3 text-xs sm:text-sm text-[#f3f2e7]/40">🔍</span>
+            </div>
+            <div>
+                <select
+                    v-model="storeFilter"
+                    class="w-full rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2.5 text-xs sm:text-sm text-[#f3f2e7] focus:border-[#0d685b] focus:outline-none focus:ring-1 focus:ring-[#0d685b]"
+                >
+                    <option value="">Semua Toko ({{ availableOrders.length }})</option>
+                    <option v-for="st in stores" :key="st.id" :value="st.id">{{ st.name }}</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grid Orderan Tersedia -->
+        <div v-if="filteredAvailableOrders.length" class="grid gap-4 md:grid-cols-2">
             <div
-                v-for="order in availableOrders"
+                v-for="order in filteredAvailableOrders"
                 :key="order.invoice_number"
                 class="flex flex-col justify-between rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-5 shadow-lg hover:border-[#0d685b]/70 transition"
             >
                 <div>
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-2">
                         <span class="rounded-full bg-amber-500/20 border border-amber-500/40 px-2.5 py-0.5 text-xs font-semibold text-amber-300">Siap Dikirim</span>
                         <span class="text-xs text-[#f3f2e7]/50">{{ fmtDate(order.created_at) }}</span>
                     </div>
-                    <h3 class="mt-2.5 text-lg font-bold text-[#f3f2e7] tracking-tight">{{ order.invoice_number }}</h3>
-                    <p class="text-xs font-medium text-[#f3f2e7]/70">🏪 Toko: {{ order.store }} · {{ order.items_count }} jenis barang</p>
+
+                    <div class="mt-2.5 flex items-baseline justify-between gap-2">
+                        <h3 class="text-lg font-bold text-[#f3f2e7] tracking-tight">{{ order.invoice_number }}</h3>
+                        <span class="text-sm font-bold text-emerald-400">{{ rupiah(order.final_amount || order.total_amount) }}</span>
+                    </div>
+
+                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-[#f3f2e7]/70">
+                        <span>🏪 {{ order.store }}</span>
+                        <span>•</span>
+                        <span>⚖️ {{ formatWeight(order.total_weight) }}</span>
+                        <span>•</span>
+                        <span>📦 {{ order.items_count }} jenis barang</span>
+                    </div>
+
+                    <!-- Rincian Produk -->
+                    <div v-if="order.details && order.details.length" class="mt-3 rounded-xl bg-[#131d1a]/80 border border-[#0d685b]/20 p-2.5 text-xs">
+                        <p class="font-bold text-[#f3f2e7]/80 mb-1">Rincian Paket:</p>
+                        <div class="space-y-1">
+                            <div v-for="(d, i) in order.details" :key="i" class="flex justify-between text-[#f3f2e7]/70">
+                                <span class="truncate pr-2">- {{ d.product_name }}</span>
+                                <span class="font-semibold text-[#f3f2e7]">× {{ d.quantity }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informasi Penerima & Alamat -->
                     <div class="mt-3.5 border-t border-[#0d685b]/20 pt-3 text-sm text-[#f3f2e7]/80">
-                        <p class="font-bold text-[#f3f2e7]">👤 {{ order.recipient_name }} <span class="text-xs font-normal text-[#f3f2e7]/60">({{ order.recipient_phone }})</span></p>
-                        <p class="mt-1 line-clamp-2 text-xs text-[#f3f2e7]/60 leading-relaxed">📍 {{ order.shipping_address }}</p>
+                        <div class="flex items-center justify-between">
+                            <p class="font-bold text-[#f3f2e7]">👤 {{ order.recipient_name }}</p>
+                            <div class="flex items-center gap-2">
+                                <a
+                                    v-if="order.recipient_phone"
+                                    :href="`tel:${order.recipient_phone}`"
+                                    class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:underline"
+                                    title="Hubungi Penerima"
+                                >
+                                    📞 Telp
+                                </a>
+                                <a
+                                    v-if="order.recipient_phone"
+                                    :href="`https://wa.me/${order.recipient_phone.replace(/^0/, '62').replace(/[^0-9]/g, '')}`"
+                                    target="_blank"
+                                    class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:underline"
+                                    title="Chat WhatsApp"
+                                >
+                                    💬 WA
+                                </a>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-xs text-[#f3f2e7]/70 leading-relaxed">
+                            📍 {{ order.shipping_address }}
+                            <span v-if="order.shipping_district || order.shipping_city" class="block text-[11px] text-[#f3f2e7]/50 mt-0.5">
+                                {{ [order.shipping_district, order.shipping_city, order.shipping_postal_code].filter(Boolean).join(', ') }}
+                            </span>
+                        </p>
+                        <p v-if="order.note" class="mt-2 text-xs italic text-amber-300/80 bg-amber-500/10 p-1.5 rounded border border-amber-500/20">
+                            Catatan: {{ order.note }}
+                        </p>
                     </div>
                 </div>
 
                 <button
                     :disabled="!!activeDelivery"
-                    class="mt-5 w-full rounded-xl bg-[#0d685b] py-2.5 text-sm font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 transition hover:bg-[#0d685b]/90 disabled:cursor-not-allowed disabled:bg-[#131d1a] disabled:text-[#f3f2e7]/30 disabled:border disabled:border-[#0d685b]/20"
+                    class="mt-5 w-full rounded-xl bg-[#0d685b] py-2.5 text-sm font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 transition hover:bg-[#0d685b]/90 disabled:cursor-not-allowed disabled:bg-[#131d1a] disabled:text-[#f3f2e7]/30 disabled:border disabled:border-[#0d685b]/20 active:scale-95"
                     @click="claimOrder(order.invoice_number)"
                 >
-                    {{ activeDelivery ? 'Selesaikan tugas aktif dulu' : '🛵 Ambil Tugas Ini' }}
+                    {{ activeDelivery ? 'Selesaikan tugas aktif dulu' : '🛵 Pilih & Ambil Orderan Ini' }}
                 </button>
             </div>
         </div>
         <div v-else class="rounded-2xl border border-[#0d685b]/20 bg-[#1c2a25] p-8 text-center text-sm text-[#f3f2e7]/60">
-            🍃 Tidak ada tugas pengantaran yang tersedia saat ini.
+            {{ availableOrders.length ? '🔍 Tidak ada pesanan yang sesuai dengan kata kunci / filter Anda.' : '🍃 Tidak ada tugas pengantaran yang tersedia saat ini.' }}
         </div>
     </div>
 

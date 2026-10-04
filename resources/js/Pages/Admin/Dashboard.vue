@@ -101,7 +101,7 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
     </div>
 
     <!-- METRIK UTAMA OPERASIONAL -->
-    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5 sm:gap-4">
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 sm:gap-4">
         <!-- Pesanan Hari Ini -->
         <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 shadow-lg">
             <div class="flex items-center justify-between">
@@ -133,6 +133,19 @@ const superadminPath = computed(() => user.value?.superadmin_path || 'dewa-panel
             </div>
             <p class="mt-3 text-2xl font-black text-emerald-300 sm:text-3xl">{{ stats.to_process }}</p>
             <p class="mt-1 text-xs font-semibold text-emerald-400 group-hover:underline">Buka Pesanan Masuk →</p>
+        </Link>
+
+        <!-- Siap Dijemput (Pickup) -->
+        <Link
+            href="/admin/pesanan?status=ready_for_pickup"
+            class="group rounded-2xl border border-teal-500/30 bg-[#1c2a25] p-4.5 shadow-lg transition hover:border-teal-400 hover:bg-[#131d1a]"
+        >
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-bold text-teal-400 uppercase tracking-wider">Siap Jemput</p>
+                <span class="rounded-lg bg-teal-500/20 p-1.5 text-sm text-teal-300">🏪</span>
+            </div>
+            <p class="mt-3 text-2xl font-black text-teal-300 sm:text-3xl">{{ stats.to_pickup || 0 }}</p>
+            <p class="mt-1 text-xs font-semibold text-teal-400 group-hover:underline">Pesanan Pickup →</p>
         </Link>
 
         <!-- Menunggu Kurir -->

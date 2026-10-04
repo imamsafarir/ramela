@@ -51,8 +51,19 @@ beforeEach(function () {
 
 function orderReady(User $customer, Store $store, Product $product, User $admin): Transaction
 {
+    $rate = \App\Models\ShippingRate::firstOrCreate(
+        ['city_name' => 'Jakarta Selatan'],
+        ['shipping_cost' => 15000, 'pricing_type' => 'flat', 'is_active' => true]
+    );
+
+    app(WalletService::class)->credit($customer, 15000, 'topup');
+
     CartItem::create(['user_id' => $customer->id, 'product_id' => $product->id, 'quantity' => 1]);
     $t = app(CheckoutAction::class)->execute($customer, $store, [
+        'delivery_type' => 'courier',
+        'shipping_rate_id' => $rate->id,
+        'shipping_district' => 'Kebayoran Baru',
+        'shipping_postal_code' => '12110',
         'recipient_name' => 'Budi',
         'recipient_phone' => '08123456789',
         'shipping_address' => 'Jl. Kebon Jeruk No 1',
@@ -186,3 +197,25 @@ test('pelanggan dan admin bisa melihat data tracking kurir dan foto validasi', f
     $resAdmin = $this->actingAs($this->admin)->get("/admin/pesanan/{$t->invoice_number}");
     $resAdmin->assertOk();
 });
+
+test('kurir bisa melepas tugas yang belum di-pickup kembali ke antrean', function () {
+    $t = orderReady($this->customer, $this->store, $this->product, $this->admin);
+
+    // Kurir ambil tugas
+    $this->actingAs($this->courier)->post("/kurir/tugas/{$t->invoice_number}/ambil")
+        ->assertSessionHasNoErrors();
+
+    // Kurir lepas tugas
+    $this->actingAs($this->courier)->post("/kurir/tugas/{$t->invoice_number}/lepas")
+        ->assertSessionHasNoErrors();
+
+    // courier_id kembali null
+    expect(Delivery::where('transaction_id', $t->id)->value('courier_id'))->toBeNull();
+
+    // Kurir 2 sekarang bisa mengambil tugas ini
+    $this->actingAs($this->courier2)->post("/kurir/tugas/{$t->invoice_number}/ambil")
+        ->assertSessionHasNoErrors();
+
+    expect(Delivery::where('transaction_id', $t->id)->value('courier_id'))->toBe($this->courier2->id);
+});
+

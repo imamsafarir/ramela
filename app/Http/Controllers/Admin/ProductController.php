@@ -19,22 +19,87 @@ class ProductController extends Controller
 {
     public function index(Request $request): Response
     {
-        $products = Product::with('store:id,name', 'category:id,name')
-            ->when($request->query('store'), fn ($q, $s) => $q->where('store_id', $s))
-            ->when($request->query('q'), fn ($q, $t) => $q->where('name', 'like', '%'.addcslashes($t, '%_\\').'%'))
-            ->latest()
+        $q = $request->query('q');
+        $storeId = $request->query('store');
+        $categoryId = $request->query('category');
+        $status = $request->query('status');
+        $stockStatus = $request->query('stock_status');
+        $sort = in_array($request->query('sort'), ['name', 'price', 'stock', 'weight', 'created_at'], true)
+            ? $request->query('sort')
+            : 'created_at';
+        $dir = $request->query('dir') === 'asc' ? 'asc' : 'desc';
+
+        $products = Product::with(['store:id,name', 'category:id,name'])
+            ->when($storeId, fn ($query, $s) => $query->where('store_id', $s))
+            ->when($categoryId, fn ($query, $c) => $query->where('category_id', $c))
+            ->when($status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->when($stockStatus === 'low', fn ($query) => $query->where('stock', '<=', 5)->where('stock', '>', 0))
+            ->when($stockStatus === 'empty', fn ($query) => $query->where('stock', 0))
+            ->when($stockStatus === 'available', fn ($query) => $query->where('stock', '>', 5))
+            ->when($q, function ($query, $term) {
+                $like = '%' . addcslashes($term, '%_\\') . '%';
+                $query->where(function ($w) use ($like) {
+                    $w->where('name', 'like', $like)
+                      ->orWhere('description', 'like', $like);
+                });
+            })
+            ->orderBy($sort, $dir)
             ->paginate(15)
             ->withQueryString()
             ->through(fn ($p) => [
-                'id' => $p->id, 'name' => $p->name, 'store' => $p->store->name,
-                'category' => $p->category?->name, 'price' => $p->price, 'stock' => $p->stock,
-                'unit' => $p->unit, 'weight' => $p->weight, 'is_active' => $p->is_active,
+                'id' => $p->id,
+                'name' => $p->name,
+                'description' => $p->description,
+                'store' => $p->store->name,
+                'store_id' => $p->store_id,
+                'category' => $p->category?->name,
+                'category_id' => $p->category_id,
+                'price' => $p->price,
+                'stock' => $p->stock,
+                'unit' => $p->unit,
+                'weight' => $p->weight,
+                'is_active' => $p->is_active,
+                'created_at' => $p->created_at?->format('d M Y H:i'),
             ]);
+
+        $categories = Category::withCount('products')
+            ->with('store:id,name')
+            ->orderBy('store_id')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'store_id' => $c->store_id,
+                'name' => $c->name,
+                'store' => $c->store->name,
+                'products_count' => $c->products_count,
+            ]);
+
+        $stores = Store::orderBy('sort_order')->get(['id', 'name']);
+
+        $stats = [
+            'total_products' => Product::count(),
+            'total_categories' => Category::count(),
+            'low_stock' => Product::where('is_active', true)->where('stock', '<=', 5)->count(),
+            'inactive' => Product::where('is_active', false)->count(),
+        ];
 
         return Inertia::render('Admin/Products', [
             'products' => $products,
-            'stores' => Store::orderBy('sort_order')->get(['id', 'name']),
-            'filters' => $request->only('store', 'q'),
+            'categories' => $categories,
+            'stores' => $stores,
+            'stats' => $stats,
+            'filters' => [
+                'q' => $q ?? '',
+                'store' => $storeId ?? '',
+                'category' => $categoryId ?? '',
+                'status' => $status ?? '',
+                'stock_status' => $stockStatus ?? '',
+                'sort' => $sort,
+                'dir' => $dir,
+                'tab' => $request->query('tab', 'products'),
+            ],
         ]);
     }
 

@@ -133,6 +133,7 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'role:kurir'])->prefix('kurir')->name('courier.')->group(function () {
     Route::get('/', [CourierController::class, 'index'])->name('dashboard');
     Route::post('/tugas/{invoice}/ambil', [CourierController::class, 'claim'])->name('claim');
+    Route::post('/tugas/{invoice}/lepas', [CourierController::class, 'release'])->name('release');
     Route::post('/pickup', [CourierController::class, 'pickup'])->name('pickup');
     Route::post('/location', [CourierController::class, 'updateLocation'])->name('location');
     Route::post('/dropoff', [CourierController::class, 'dropoff'])->name('dropoff');

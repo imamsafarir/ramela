@@ -6,8 +6,11 @@ use App\Actions\ChangeOrderStatus;
 use App\Enums\OrderStatus;
 use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Controller;
+use App\Enums\Role;
+use App\Models\Delivery;
 use App\Models\Store;
 use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,7 +20,13 @@ use Inertia\Response;
 class OrderController extends Controller
 {
     /** Status yang boleh diatur Admin. Shipping milik Kurir. */
-    private const ADMIN_STATUSES = [OrderStatus::Processed, OrderStatus::ReadyToShip, OrderStatus::Completed, OrderStatus::Cancelled];
+    private const ADMIN_STATUSES = [
+        OrderStatus::Processed,
+        OrderStatus::ReadyToShip,
+        OrderStatus::ReadyForPickup,
+        OrderStatus::Completed,
+        OrderStatus::Cancelled,
+    ];
 
     public function index(Request $request): Response
     {
@@ -66,8 +75,23 @@ class OrderController extends Controller
     public function show(string $invoice): Response
     {
         $t = Transaction::where('invoice_number', $invoice)
-            ->with(['store:id,name', 'user:id,username,phone', 'promo:id,code', 'details', 'statusLogs.changedBy:id,username', 'delivery.courier:id,username', 'delivery.photos'])
+            ->with(['store:id,name', 'user:id,username,phone', 'promo:id,code', 'details', 'statusLogs.changedBy:id,username', 'delivery.courier:id,username,name,phone', 'delivery.photos', 'delivery.locations'])
             ->firstOrFail();
+
+        $couriers = User::role(Role::Courier->value)
+            ->get(['id', 'name', 'username', 'phone'])
+            ->map(function ($u) {
+                $busy = Delivery::where('courier_id', $u->id)
+                    ->whereIn('status', ['waiting_pickup', 'en_route'])
+                    ->exists();
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name ?: $u->username,
+                    'username' => $u->username,
+                    'phone' => $u->phone,
+                    'is_busy' => $busy,
+                ];
+            });
 
         return Inertia::render('Admin/OrderShow', [
             'order' => [
@@ -81,6 +105,7 @@ class OrderController extends Controller
                 'discount_amount' => $t->discount_amount,
                 'shipping_cost' => $t->shipping_cost,
                 'final_amount' => $t->final_amount,
+                'total_weight' => (int) ($t->total_weight ?? 0),
                 'delivery_type' => $t->delivery_type ?? 'courier',
                 'recipient_name' => $t->recipient_name,
                 'recipient_phone' => $t->recipient_phone,
@@ -95,10 +120,13 @@ class OrderController extends Controller
                 'details' => $t->details->map->only('product_name', 'quantity', 'price_at_transaction', 'subtotal'),
                 'delivery' => $t->delivery ? [
                     'status' => $t->delivery->status,
-                    'courier_name' => $t->delivery->courier?->username,
+                    'courier_id' => $t->delivery->courier_id,
+                    'courier_name' => $t->delivery->courier?->name ?: $t->delivery->courier?->username,
+                    'courier_phone' => $t->delivery->courier?->phone,
                     'current_lat' => $t->delivery->current_lat,
                     'current_lng' => $t->delivery->current_lng,
                     'location_updated_at' => $t->delivery->location_updated_at?->toIso8601String(),
+                    'locations' => $t->delivery->locations()->orderBy('recorded_at')->take(100)->get(['latitude', 'longitude'])->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
                     'photos' => $t->delivery->photos->map(fn($p) => [
                         'type' => $p->type,
                         'url' => \Illuminate\Support\Facades\Storage::url($p->path),
@@ -112,7 +140,8 @@ class OrderController extends Controller
                     'at' => $l->created_at->toIso8601String(),
                 ]),
             ],
-            'actions' => collect($t->status->allowedNext())
+            'couriers' => $couriers,
+            'actions' => collect($t->status->allowedNext($t->delivery_type ?? 'courier'))
                 ->filter(fn($s) => in_array($s, self::ADMIN_STATUSES, true))
                 ->map(fn($s) => ['value' => $s->value, 'label' => $s->label()])->values(),
         ]);

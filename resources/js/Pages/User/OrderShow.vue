@@ -105,6 +105,41 @@ const waLink = computed(() => {
                 Sedang Diantar Kurir
             </span>
         </div>
+        <div v-else-if="order.delivery_type === 'pickup' && order.status === 'ready_for_pickup'" class="flex items-center gap-2">
+            <span
+                class="inline-flex items-center gap-1.5 rounded-full bg-teal-950/60 px-3 py-1 text-xs font-bold text-teal-200 border border-teal-500/50"
+            >
+                <span class="relative flex h-2 w-2">
+                    <span
+                        class="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75"
+                    ></span>
+                    <span
+                        class="relative inline-flex h-2 w-2 rounded-full bg-teal-400"
+                    ></span>
+                </span>
+                Siap Dijemput di Toko
+            </span>
+        </div>
+    </div>
+
+    <!-- BANNER PESANAN PICKUP SIAP DIJEMPUT -->
+    <div
+        v-if="order.delivery_type === 'pickup' && order.status === 'ready_for_pickup'"
+        class="mt-6 rounded-2xl border-2 border-teal-500/60 bg-gradient-to-r from-teal-950/80 via-[#1c2a25] to-teal-950/80 p-5 shadow-xl text-[#f3f2e7]"
+    >
+        <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500/20 text-2xl border border-teal-500/40">
+                🎉
+            </div>
+            <div>
+                <h2 class="text-base font-black text-teal-300">
+                    Pesanan Anda Sudah Siap Dijemput!
+                </h2>
+                <p class="mt-1 text-xs text-[#f3f2e7]/80 leading-relaxed">
+                    Barang pesanan Anda telah selesai disiapkan oleh toko <strong class="text-teal-200">{{ order.store }}</strong>. Silakan datang langsung ke lokasi toko dan tunjukkan nomor invoice <strong class="text-teal-200 font-mono">{{ order.invoice_number }}</strong> kepada kasir / staf toko.
+                </p>
+            </div>
+        </div>
     </div>
 
     <!-- KARTU UTAMA: LIVE TRACKING RUTE JALAN KURIR (KETIKA SHIPPING ATAU COMPLETED) -->
@@ -220,6 +255,7 @@ const waLink = computed(() => {
                 :courier-lng="order.delivery.current_lng"
                 :dest-lat="order.shipping_latitude"
                 :dest-lng="order.shipping_longitude"
+                :route-history="order.delivery.locations || []"
                 :recipient-name="order.recipient_name"
                 :store-name="order.store"
             />

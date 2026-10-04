@@ -311,3 +311,56 @@ test('admin dapat menyimpan produk dengan berat dalam satuan kg dan dikonversi k
         'weight' => 2500, // 2.5 kg dikonversi jadi 2500 gram
     ]);
 });
+
+test('admin hanya melihat aksi Siap Dijemput untuk order pickup dan Siap Dikirim untuk order kurir', function () {
+    // 1. Buat pesanan pickup berstatus processed
+    $pickupTx = Transaction::create([
+        'user_id' => $this->user->id,
+        'store_id' => $this->store->id,
+        'invoice_number' => 'INV-PICKUP-001',
+        'total_amount' => 50000,
+        'final_amount' => 50000,
+        'status' => OrderStatus::Processed,
+        'delivery_type' => 'pickup',
+        'recipient_name' => 'Pelanggan Pickup',
+        'recipient_phone' => '0812345678',
+        'shipping_address' => 'Ambil di Toko',
+    ]);
+
+    // 2. Buat pesanan kurir berstatus processed
+    $courierTx = Transaction::create([
+        'user_id' => $this->user->id,
+        'store_id' => $this->store->id,
+        'invoice_number' => 'INV-COURIER-001',
+        'total_amount' => 50000,
+        'shipping_cost' => 15000,
+        'final_amount' => 65000,
+        'status' => OrderStatus::Processed,
+        'delivery_type' => 'courier',
+        'recipient_name' => 'Pelanggan Kurir',
+        'recipient_phone' => '0812345678',
+        'shipping_address' => 'Jl. Pengiriman No 1',
+    ]);
+
+    // Admin buka detail pesanan pickup
+    $this->actingAs($this->admin)->get("/admin/pesanan/{$pickupTx->invoice_number}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/OrderShow')
+            ->where('actions', fn ($actions) =>
+                collect($actions)->pluck('value')->contains('ready_for_pickup') &&
+                ! collect($actions)->pluck('value')->contains('ready_to_ship')
+            )
+        );
+
+    // Admin buka detail pesanan kurir
+    $this->actingAs($this->admin)->get("/admin/pesanan/{$courierTx->invoice_number}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/OrderShow')
+            ->where('actions', fn ($actions) =>
+                collect($actions)->pluck('value')->contains('ready_to_ship') &&
+                ! collect($actions)->pluck('value')->contains('ready_for_pickup')
+            )
+        );
+});

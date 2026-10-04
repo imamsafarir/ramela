@@ -70,6 +70,7 @@ class OrderSeeder extends Seeder
             OrderStatus::Pending->value => 5,
             OrderStatus::Paid->value => 7,
             OrderStatus::Processed->value => 8,
+            OrderStatus::ReadyForPickup->value => 6,
             OrderStatus::ReadyToShip->value => 8,
             OrderStatus::Shipping->value => 10,
             OrderStatus::Completed->value => 18,
@@ -102,7 +103,13 @@ class OrderSeeder extends Seeder
                 $daysAgo = rand(0, 14);
                 $createdAt = Carbon::now()->subDays($daysAgo)->subHours(rand(1, 12))->subMinutes(rand(1, 50));
 
-                $isPickup = (rand(1, 10) <= 2); // 20% pickup
+                if ($targetStatus === OrderStatus::ReadyForPickup->value) {
+                    $isPickup = true;
+                } elseif (in_array($targetStatus, [OrderStatus::ReadyToShip->value, OrderStatus::Shipping->value], true)) {
+                    $isPickup = false;
+                } else {
+                    $isPickup = (rand(1, 10) <= 3); // 30% pickup
+                }
                 $rate = $rates->random();
 
                 // Pilih 1 - 3 produk
@@ -327,14 +334,43 @@ class OrderSeeder extends Seeder
             return;
         }
 
-        // Ready to ship
+        // Khusus alur Pickup: Processed -> ReadyForPickup -> Completed
+        if ($t->delivery_type === 'pickup') {
+            $time = $time->copy()->addMinutes(rand(20, 45));
+            TransactionStatusLog::create([
+                'transaction_id' => $t->id,
+                'from_status' => OrderStatus::Processed->value,
+                'to_status' => OrderStatus::ReadyForPickup->value,
+                'changed_by' => $admin?->id,
+                'note' => 'Pesanan telah selesai dipersiapkan toko dan siap dijemput oleh pelanggan.',
+                'created_at' => $time,
+            ]);
+
+            if ($targetStatus === OrderStatus::ReadyForPickup->value) {
+                return;
+            }
+
+            $time = $time->copy()->addMinutes(rand(30, 90));
+            TransactionStatusLog::create([
+                'transaction_id' => $t->id,
+                'from_status' => OrderStatus::ReadyForPickup->value,
+                'to_status' => OrderStatus::Completed->value,
+                'changed_by' => $admin?->id,
+                'note' => 'Pesanan telah diambil langsung oleh pelanggan di toko. Transaksi selesai.',
+                'created_at' => $time,
+            ]);
+
+            return;
+        }
+
+        // Alur Kurir: Processed -> ReadyToShip -> Shipping -> Completed
         $time = $time->copy()->addMinutes(rand(20, 45));
         TransactionStatusLog::create([
             'transaction_id' => $t->id,
             'from_status' => OrderStatus::Processed->value,
             'to_status' => OrderStatus::ReadyToShip->value,
             'changed_by' => $admin?->id,
-            'note' => 'Barang selesai dikemas, siap dipickup atau dikirim.',
+            'note' => 'Barang selesai dikemas, menunggu kurir menjemput pesanan.',
             'created_at' => $time,
         ]);
 

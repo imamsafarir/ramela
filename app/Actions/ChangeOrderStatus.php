@@ -28,8 +28,9 @@ class ChangeOrderStatus
             // Kunci baris agar dua admin tidak mengubah/membatalkan pesanan yang sama bersamaan.
             $locked = Transaction::whereKey($transaction->id)->lockForUpdate()->firstOrFail();
             $from = $locked->status;
+            $deliveryType = $locked->delivery_type ?? 'courier';
 
-            if (! $force && ! $from->canTransitionTo($to)) {
+            if (! $force && ! $from->canTransitionTo($to, $deliveryType)) {
                 throw new CheckoutException("Status tidak bisa diubah dari {$from->label()} ke {$to->label()}.");
             }
 
@@ -37,7 +38,7 @@ class ChangeOrderStatus
                 $this->refundAndRestock($locked, $by);
             }
 
-            if ($to === OrderStatus::ReadyToShip && ($locked->delivery_type ?? 'courier') === 'courier') {
+            if ($to === OrderStatus::ReadyToShip && $deliveryType === 'courier') {
                 \App\Models\Delivery::firstOrCreate(
                     ['transaction_id' => $locked->id],
                     ['status' => 'waiting_pickup']

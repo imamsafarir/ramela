@@ -103,6 +103,7 @@ class CourierController extends Controller
 
         // 3. Pesanan Siap Kirim yang Belum Ada Kurir (Ready To Ship)
         $unassignedOrders = Transaction::with('store:id,name')
+            ->where('delivery_type', 'courier')
             ->where('status', OrderStatus::ReadyToShip)
             ->where(function ($q) {
                 $q->whereDoesntHave('delivery')

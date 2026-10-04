@@ -31,17 +31,34 @@ beforeEach(function () {
     $this->customer->refresh();
 });
 
-function placeOrder(User $customer, Store $store, int $price = 25000, int $qty = 2, int $stock = 10): Transaction
+function placeOrder(User $customer, Store $store, int $price = 25000, int $qty = 2, int $stock = 10, string $deliveryType = 'pickup'): Transaction
 {
+    $rate = \App\Models\ShippingRate::firstOrCreate(
+        ['city_name' => 'Semarang'],
+        ['shipping_cost' => 10000, 'pricing_type' => 'flat', 'is_active' => true]
+    );
+
     $product = Product::create([
         'store_id' => $store->id, 'name' => 'Item '.uniqid(), 'slug' => 'i-'.uniqid(), 'price' => $price, 'stock' => $stock,
     ]);
-    app(WalletService::class)->credit($customer, $price * $qty, 'topup');
+    $shippingCost = ($deliveryType === 'courier') ? 10000 : 0;
+    app(WalletService::class)->credit($customer, ($price * $qty) + $shippingCost, 'topup');
     CartItem::create(['user_id' => $customer->id, 'product_id' => $product->id, 'quantity' => $qty]);
 
-    return app(CheckoutAction::class)->execute($customer->refresh(), $store, [
-        'recipient_name' => 'Budi', 'recipient_phone' => '08123456789', 'shipping_address' => 'Jl. Mawar 1',
-    ]);
+    $shippingData = [
+        'delivery_type' => $deliveryType,
+        'recipient_name' => 'Budi',
+        'recipient_phone' => '08123456789',
+        'shipping_address' => 'Jl. Mawar 1',
+    ];
+
+    if ($deliveryType === 'courier') {
+        $shippingData['shipping_rate_id'] = $rate->id;
+        $shippingData['shipping_district'] = 'Semarang Tengah';
+        $shippingData['shipping_postal_code'] = '50134';
+    }
+
+    return app(CheckoutAction::class)->execute($customer->refresh(), $store, $shippingData);
 }
 
 test('hanya admin yang bisa membuka panel admin', function () {
@@ -114,7 +131,7 @@ test('menghapus produk tidak merusak riwayat pesanan', function () {
 });
 
 test('alur status: Dibayar -> Diproses -> Siap Dikirim, tercatat siapa yang mengubah', function () {
-    $order = placeOrder($this->customer, $this->eats);
+    $order = placeOrder($this->customer, $this->eats, deliveryType: 'courier');
 
     $this->actingAs($this->admin)->patch("/admin/pesanan/{$order->invoice_number}/status", ['status' => 'processed'])
         ->assertSessionHasNoErrors();
@@ -127,8 +144,41 @@ test('alur status: Dibayar -> Diproses -> Siap Dikirim, tercatat siapa yang meng
     expect($log->from_status)->toBe('processed')->and($log->to_status)->toBe('ready_to_ship')->and($log->changed_by)->toBe($this->admin->id);
 });
 
+test('alur status pesanan pickup: Dibayar -> Diproses -> Siap Dijemput -> Selesai', function () {
+    $order = placeOrder($this->customer, $this->eats, deliveryType: 'pickup');
+
+    // 1. Admin memproses pesanan
+    $this->actingAs($this->admin)->patch("/admin/pesanan/{$order->invoice_number}/status", ['status' => 'processed'])
+        ->assertSessionHasNoErrors();
+
+    // 2. Untuk pickup, admin TIDAK BISA menandai siap dikirim (harus gagal)
+    $this->actingAs($this->admin)->patch("/admin/pesanan/{$order->invoice_number}/status", ['status' => 'ready_to_ship'])
+        ->assertSessionHasErrors('status');
+
+    // 3. Admin menandai siap dijemput
+    $this->actingAs($this->admin)->patch("/admin/pesanan/{$order->invoice_number}/status", ['status' => 'ready_for_pickup'])
+        ->assertSessionHasNoErrors();
+
+    $order->refresh();
+    expect($order->status)->toBe(OrderStatus::ReadyForPickup);
+    $log = $order->statusLogs()->latest('id')->first();
+    expect($log->from_status)->toBe('processed')
+        ->and($log->to_status)->toBe('ready_for_pickup')
+        ->and($log->changed_by)->toBe($this->admin->id);
+
+    // 4. Saat pelanggan datang mengambil pesanan, admin menandai selesai
+    $this->actingAs($this->admin)->patch("/admin/pesanan/{$order->invoice_number}/status", ['status' => 'completed'])
+        ->assertSessionHasNoErrors();
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Completed);
+    $finalLog = $order->statusLogs()->latest('id')->first();
+    expect($finalLog->from_status)->toBe('ready_for_pickup')
+        ->and($finalLog->to_status)->toBe('completed')
+        ->and($finalLog->changed_by)->toBe($this->admin->id);
+});
+
 test('admin tidak bisa melompati status atau mengatur status milik kurir', function () {
-    $order = placeOrder($this->customer, $this->eats);
+    $order = placeOrder($this->customer, $this->eats, deliveryType: 'courier');
     $url = "/admin/pesanan/{$order->invoice_number}/status";
 
     $this->actingAs($this->admin)->patch($url, ['status' => 'ready_to_ship'])->assertSessionHasErrors('status'); // lompat
@@ -186,7 +236,7 @@ test('kategori: tidak boleh duplikat dalam satu toko, hapus membuat produk tanpa
     $this->actingAs($this->admin)->get('/admin/kategori')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Admin/Categories')
+            ->component('Admin/Products')
             ->has('categories', 2));
 
     $this->actingAs($this->admin)->delete("/admin/kategori/{$cat->id}");

@@ -8,6 +8,7 @@ export const statusClass = (status) =>
         paid: "bg-blue-100 text-blue-700",
         processed: "bg-indigo-100 text-indigo-700",
         ready_to_ship: "bg-amber-100 text-amber-700",
+        ready_for_pickup: "bg-teal-100 text-teal-800 border border-teal-300",
         shipping: "bg-orange-100 text-orange-700",
         completed: "bg-green-100 text-green-700",
         cancelled: "bg-red-100 text-red-700",

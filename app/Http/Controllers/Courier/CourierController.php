@@ -6,6 +6,7 @@ use App\Actions\ChangeOrderStatus;
 use App\Enums\OrderStatus;
 use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Controller;
+use App\Models\Store;
 use App\Models\Delivery;
 use App\Models\DeliveryLocation;
 use App\Models\DeliveryPhoto;
@@ -25,13 +26,14 @@ class CourierController extends Controller
         $user = $request->user();
 
         // Tugas aktif kurir saat ini (sedang berjalan / belum selesai)
-        $activeDelivery = Delivery::with(['transaction.store:id,name', 'transaction.details', 'photos'])
+        $activeDelivery = Delivery::with(['transaction.store:id,name', 'transaction.details', 'photos', 'locations'])
             ->where('courier_id', $user->id)
             ->whereIn('status', ['waiting_pickup', 'en_route'])
             ->first();
 
         // Daftar pesanan siap dikirim (belum diambil siapa pun)
         $availableOrders = Transaction::with(['store:id,name', 'details'])
+            ->where('delivery_type', 'courier')
             ->where('status', OrderStatus::ReadyToShip)
             ->where(function ($q) {
                 $q->whereDoesntHave('delivery')
@@ -42,10 +44,24 @@ class CourierController extends Controller
             ->map(fn($t) => [
                 'invoice_number' => $t->invoice_number,
                 'store' => $t->store->name,
+                'store_id' => $t->store_id,
                 'recipient_name' => $t->recipient_name,
                 'recipient_phone' => $t->recipient_phone,
+                'shipping_city' => $t->shipping_city,
+                'shipping_district' => $t->shipping_district,
+                'shipping_postal_code' => $t->shipping_postal_code,
                 'shipping_address' => $t->shipping_address,
+                'shipping_latitude' => $t->shipping_latitude,
+                'shipping_longitude' => $t->shipping_longitude,
+                'total_amount' => $t->total_amount,
+                'final_amount' => $t->final_amount,
+                'total_weight' => (int) ($t->total_weight ?? 0),
                 'items_count' => $t->details->count(),
+                'details' => $t->details->map(fn($d) => [
+                    'product_name' => $d->product_name,
+                    'quantity' => $d->quantity,
+                ]),
+                'note' => $t->note,
                 'created_at' => $t->created_at->toIso8601String(),
             ]);
 
@@ -64,6 +80,8 @@ class CourierController extends Controller
                 'completed_at' => $d->completed_at?->toIso8601String(),
             ]);
 
+        $stores = Store::orderBy('sort_order')->get(['id', 'name']);
+
         return Inertia::render('Courier/Dashboard', [
             'activeDelivery' => $activeDelivery ? [
                 'id' => $activeDelivery->id,
@@ -72,14 +90,21 @@ class CourierController extends Controller
                 'current_lng' => $activeDelivery->current_lng,
                 'location_updated_at' => $activeDelivery->location_updated_at?->toIso8601String(),
                 'started_at' => $activeDelivery->started_at?->toIso8601String(),
+                'locations' => $activeDelivery->locations()->orderBy('recorded_at')->take(100)->get(['latitude', 'longitude'])->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
                 'transaction' => [
                     'invoice_number' => $activeDelivery->transaction->invoice_number,
                     'store' => $activeDelivery->transaction->store->name,
                     'recipient_name' => $activeDelivery->transaction->recipient_name,
                     'recipient_phone' => $activeDelivery->transaction->recipient_phone,
+                    'shipping_city' => $activeDelivery->transaction->shipping_city,
+                    'shipping_district' => $activeDelivery->transaction->shipping_district,
+                    'shipping_postal_code' => $activeDelivery->transaction->shipping_postal_code,
                     'shipping_address' => $activeDelivery->transaction->shipping_address,
                     'shipping_latitude' => $activeDelivery->transaction->shipping_latitude,
                     'shipping_longitude' => $activeDelivery->transaction->shipping_longitude,
+                    'total_amount' => $activeDelivery->transaction->total_amount,
+                    'final_amount' => $activeDelivery->transaction->final_amount,
+                    'total_weight' => (int) ($activeDelivery->transaction->total_weight ?? 0),
                     'note' => $activeDelivery->transaction->note,
                     'details' => $activeDelivery->transaction->details->map->only('product_name', 'quantity'),
                 ],
@@ -91,7 +116,26 @@ class CourierController extends Controller
             ] : null,
             'availableOrders' => $availableOrders,
             'history' => $history,
+            'stores' => $stores,
         ]);
+    }
+
+    public function release(Request $request, string $invoice): RedirectResponse
+    {
+        $user = $request->user();
+        $transaction = Transaction::where('invoice_number', $invoice)->firstOrFail();
+        $delivery = Delivery::where('transaction_id', $transaction->id)
+            ->where('courier_id', $user->id)
+            ->where('status', 'waiting_pickup')
+            ->first();
+
+        if (! $delivery) {
+            return back()->withErrors(['error' => 'Pesanan tidak dapat dibatalkan karena sudah dalam perjalanan atau bukan tugas Anda.']);
+        }
+
+        $delivery->update(['courier_id' => null]);
+
+        return back()->with('success', 'Tugas pengantaran berhasil dikembalikan ke daftar tugas siap diambil.');
     }
 
     public function claim(Request $request, string $invoice): RedirectResponse
@@ -109,8 +153,8 @@ class CourierController extends Controller
 
         $transaction = Transaction::where('invoice_number', $invoice)->firstOrFail();
 
-        if ($transaction->status !== OrderStatus::ReadyToShip) {
-            return back()->withErrors(['error' => 'Pesanan tidak dalam status siap dikirim.']);
+        if ($transaction->status !== OrderStatus::ReadyToShip || ($transaction->delivery_type ?? 'courier') === 'pickup') {
+            return back()->withErrors(['error' => 'Pesanan tidak dalam status siap dikirim oleh kurir.']);
         }
 
         try {

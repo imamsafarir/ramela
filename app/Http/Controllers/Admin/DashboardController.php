@@ -22,6 +22,7 @@ class DashboardController extends Controller
                 'revenue_today' => (clone $today)->where('status', '!=', OrderStatus::Cancelled->value)->sum('final_amount'),
                 'to_process' => Transaction::where('status', OrderStatus::Paid->value)->count(),
                 'to_ship' => Transaction::where('status', OrderStatus::ReadyToShip->value)->count(),
+                'to_pickup' => Transaction::where('status', OrderStatus::ReadyForPickup->value)->count(),
                 'low_stock' => Product::where('is_active', true)->where('stock', '<=', 5)->count(),
             ],
             'perStore' => Store::orderBy('sort_order')->get(['id', 'name'])->map(fn ($s) => [

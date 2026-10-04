@@ -14,13 +14,11 @@ const navItems = computed(() => {
     const items = [
         { label: 'Dashboard', href: '/admin' },
         { label: 'Pesanan', href: '/admin/pesanan' },
-        { label: 'Produk', href: '/admin/produk' },
-        { label: 'Kategori', href: '/admin/kategori' },
+        { label: 'Produk & Kategori', href: '/admin/produk' },
         { label: 'Kurir', href: '/admin/kurir' },
         { label: 'Pengguna', href: '/admin/users' },
         { label: 'Promo', href: '/admin/promo' },
-        { label: 'Blog', href: '/admin/blog' },
-        { label: 'FAQ', href: '/admin/faq' },
+        { label: 'Blog & FAQ', href: '/admin/blog' },
     ];
 
     if (isSuperAdmin.value) {
@@ -33,7 +31,12 @@ const navItems = computed(() => {
     return items;
 });
 
-const active = (href) => (href === '/admin' ? page.url === '/admin' : page.url.startsWith(href));
+const active = (href) => {
+    if (href === '/admin') return page.url === '/admin';
+    if (href === '/admin/produk') return page.url.startsWith('/admin/produk') || page.url.startsWith('/admin/kategori');
+    if (href === '/admin/blog') return page.url.startsWith('/admin/blog') || page.url.startsWith('/admin/faq');
+    return page.url.startsWith(href);
+};
 </script>
 
 <template>

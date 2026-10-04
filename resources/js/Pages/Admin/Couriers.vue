@@ -50,20 +50,30 @@ const setTab = (tab) => {
     }
 };
 
-// Form Assign Kurir
-const assignForm = useForm({
-    invoice_number: "",
-    courier_id: "",
-});
+// Penugasan Kurir per Invoice
+const selectedCouriers = ref({});
+const isAssigning = ref(false);
 
 const submitAssign = (invoice) => {
-    assignForm.invoice_number = invoice;
-    assignForm.post("/admin/kurir/assign", {
-        preserveScroll: true,
-        onSuccess: () => {
-            assignForm.reset();
+    const courierId = selectedCouriers.value[invoice];
+    if (!courierId) return;
+    isAssigning.value = true;
+    router.post(
+        "/admin/kurir/assign",
+        {
+            invoice_number: invoice,
+            courier_id: courierId,
         },
-    });
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                delete selectedCouriers.value[invoice];
+            },
+            onFinish: () => {
+                isAssigning.value = false;
+            },
+        }
+    );
 };
 
 // Modal Preview Foto Bukti
@@ -407,7 +417,7 @@ const deliveryStatusBadge = (status) => {
 
                     <div class="flex items-center gap-2">
                         <select
-                            v-model="assignForm.courier_id"
+                            v-model="selectedCouriers[order.invoice_number]"
                             class="rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3 py-1.5 text-xs text-[#f3f2e7] focus:outline-none focus:border-[#0d685b]"
                         >
                             <option value="">-- Pilih Kurir --</option>
@@ -416,18 +426,18 @@ const deliveryStatusBadge = (status) => {
                                 :key="c.id"
                                 :value="c.id"
                             >
-                                {{ c.username }} ({{ c.name }})
+                                {{ c.name }} ({{ c.username }})
                                 {{
-                                    c.is_busy ? "[Sedang Mengantar]" : "[Siap]"
+                                    c.is_busy ? "[Sedang Mengantar]" : "[🟢 Siap]"
                                 }}
                             </option>
                         </select>
                         <button
                             type="button"
                             :disabled="
-                                !assignForm.courier_id || assignForm.processing
+                                !selectedCouriers[order.invoice_number] || isAssigning
                             "
-                            class="rounded-xl bg-[#0d685b] px-3.5 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/90 disabled:opacity-40 transition"
+                            class="rounded-xl bg-[#0d685b] px-3.5 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/90 disabled:opacity-40 transition cursor-pointer"
                             @click="submitAssign(order.invoice_number)"
                         >
                             Tugaskan
