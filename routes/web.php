@@ -44,9 +44,21 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
 
+// --- Dashboard Universal (Kurir dialihkan ke panel kurir, Pengguna & Admin ke dashboard belanja) ---
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    if ($request->user()->hasRole(\App\Enums\Role::Courier->value)) {
+        return redirect()->route('courier.dashboard');
+    }
+
+    if ($request->user()->hasAnyRole([\App\Enums\Role::User->value, \App\Enums\Role::SuperAdmin->value, \App\Enums\Role::Admin->value])) {
+        return app(DashboardController::class)($request);
+    }
+
+    abort(403);
+})->middleware('auth')->name('dashboard');
+
 // --- Pengguna & Belanja (Dapat diakses juga oleh Admin & Super Admin) ---
 Route::middleware(['auth', 'role:pengguna,super_admin,admin'])->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');

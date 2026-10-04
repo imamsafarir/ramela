@@ -7,6 +7,20 @@ const user = computed(() => page.props.auth?.user);
 const features = computed(
     () => page.props.features ?? { blog: true, faq: true },
 );
+
+const dashboardHref = computed(() => {
+    if (!user.value) return "/login";
+    return (
+        user.value.dashboard_path ||
+        (user.value.role === "kurir" ? "/kurir" : "/dashboard")
+    );
+});
+
+const dashboardLabel = computed(() => {
+    if (!user.value) return "Masuk";
+    if (user.value.role === "kurir") return `Panel Kurir (${user.value.username})`;
+    return `Dashboard (${user.value.username})`;
+});
 </script>
 
 <template>
@@ -49,10 +63,10 @@ const features = computed(
                 <div class="flex items-center gap-3">
                     <template v-if="user">
                         <Link
-                            href="/dashboard"
+                            :href="dashboardHref"
                             class="rounded-xl bg-[#0d685b] px-4 py-2 text-sm font-bold text-[#f3f2e7] shadow-sm hover:bg-[#117c6d] active:scale-95 transition"
                         >
-                            Dashboard ({{ user.username }})
+                            {{ dashboardLabel }}
                         </Link>
                     </template>
                     <template v-else>
@@ -214,14 +228,22 @@ const features = computed(
             </Link>
 
             <Link
-                :href="user ? '/dashboard' : '/login'"
+                :href="dashboardHref"
                 class="flex flex-col items-center gap-0.5 px-3 py-1 text-xs font-bold transition"
-                :class="user ? 'text-amber-300' : 'text-[#f3f2e7]'"
+                :class="
+                    user
+                        ? user.role === 'kurir'
+                            ? 'text-emerald-400'
+                            : 'text-amber-300'
+                        : 'text-[#f3f2e7]'
+                "
             >
                 <span class="text-base leading-none">{{
-                    user ? "👤" : "🔑"
+                    user ? (user.role === "kurir" ? "🛵" : "👤") : "🔑"
                 }}</span>
-                <span class="text-[10px]">{{ user ? "Akun" : "Masuk" }}</span>
+                <span class="text-[10px]">{{
+                    user ? (user.role === "kurir" ? "Kurir" : "Akun") : "Masuk"
+                }}</span>
             </Link>
         </nav>
     </div>

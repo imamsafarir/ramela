@@ -28,7 +28,11 @@ beforeEach(function () {
     $this->store = Store::create(['slug' => 'eats', 'name' => 'RAMELA EATS'])->refresh();
 
     $this->product = Product::create([
-        'store_id' => $this->store->id, 'name' => 'Paket Ayam', 'slug' => 'paket-ayam', 'price' => 30000, 'stock' => 10,
+        'store_id' => $this->store->id,
+        'name' => 'Paket Ayam',
+        'slug' => 'paket-ayam',
+        'price' => 30000,
+        'stock' => 10,
     ]);
 
     $this->customer = User::factory()->create();
@@ -218,4 +222,3 @@ test('kurir bisa melepas tugas yang belum di-pickup kembali ke antrean', functio
 
     expect(Delivery::where('transaction_id', $t->id)->value('courier_id'))->toBe($this->courier2->id);
 });
-
