@@ -26,13 +26,13 @@ class CourierController extends Controller
         $user = $request->user();
 
         // Tugas aktif kurir saat ini (sedang berjalan / belum selesai)
-        $activeDelivery = Delivery::with(['transaction.store:id,name', 'transaction.details', 'photos', 'locations'])
+        $activeDelivery = Delivery::with(['transaction.store', 'transaction.details', 'photos', 'locations'])
             ->where('courier_id', $user->id)
             ->whereIn('status', ['waiting_pickup', 'en_route'])
             ->first();
 
         // Daftar pesanan siap dikirim (belum diambil siapa pun)
-        $availableOrders = Transaction::with(['store:id,name', 'details'])
+        $availableOrders = Transaction::with(['store', 'details'])
             ->where('delivery_type', 'courier')
             ->where('status', OrderStatus::ReadyToShip)
             ->where(function ($q) {
@@ -45,6 +45,10 @@ class CourierController extends Controller
                 'invoice_number' => $t->invoice_number,
                 'store' => $t->store->name,
                 'store_id' => $t->store_id,
+                'store_slug' => $t->store->slug,
+                'store_address' => $t->store->address,
+                'store_latitude' => (float) $t->store->latitude,
+                'store_longitude' => (float) $t->store->longitude,
                 'recipient_name' => $t->recipient_name,
                 'recipient_phone' => $t->recipient_phone,
                 'shipping_city' => $t->shipping_city,
@@ -90,10 +94,14 @@ class CourierController extends Controller
                 'current_lng' => $activeDelivery->current_lng,
                 'location_updated_at' => $activeDelivery->location_updated_at?->toIso8601String(),
                 'started_at' => $activeDelivery->started_at?->toIso8601String(),
-                'locations' => $activeDelivery->locations()->orderBy('recorded_at')->take(100)->get(['latitude', 'longitude'])->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
+                'locations' => $activeDelivery->locations()->latest('recorded_at')->take(100)->get(['latitude', 'longitude'])->reverse()->values()->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
                 'transaction' => [
                     'invoice_number' => $activeDelivery->transaction->invoice_number,
                     'store' => $activeDelivery->transaction->store->name,
+                    'store_slug' => $activeDelivery->transaction->store->slug,
+                    'store_address' => $activeDelivery->transaction->store->address,
+                    'store_latitude' => (float) $activeDelivery->transaction->store->latitude,
+                    'store_longitude' => (float) $activeDelivery->transaction->store->longitude,
                     'recipient_name' => $activeDelivery->transaction->recipient_name,
                     'recipient_phone' => $activeDelivery->transaction->recipient_phone,
                     'shipping_city' => $activeDelivery->transaction->shipping_city,
@@ -243,7 +251,7 @@ class CourierController extends Controller
         $user = $request->user();
 
         $delivery = Delivery::where('courier_id', $user->id)
-            ->where('status', 'en_route')
+            ->whereIn('status', ['waiting_pickup', 'en_route'])
             ->first();
 
         if (! $delivery) {

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import CourierLayout from '../../Layouts/CourierLayout.vue';
 import DeliveryMap from '../../Components/DeliveryMap.vue';
 import { fmtDate, rupiah } from '../../utils/format';
@@ -43,6 +43,17 @@ const formatWeight = (w) => {
 
 // Koordinat yang diinjeksi dari CourierLayout (sudah dipastikan GPS aktif)
 const layoutCoords = inject('courierCoords', null);
+
+// Selaraskan koordinat lokal jika layout berhasil mendapatkan GPS baru
+watch(
+    () => layoutCoords?.value,
+    (coords) => {
+        if (coords?.lat && coords?.lng) {
+            currentCoords.value = { lat: coords.lat, lng: coords.lng };
+        }
+    },
+    { immediate: true, deep: true }
+);
 
 // Modal & Unggah Foto State
 const showCamera = ref(false);
@@ -252,30 +263,99 @@ const releaseOrder = (invoice) => {
     }
 };
 
-// Background GPS Tracker saat en_route
+// Manual refresh GPS dengan akurasi tinggi
+const isRefreshingGps = ref(false);
+const refreshGpsLocation = () => {
+    if (!navigator.geolocation) return;
+    isRefreshingGps.value = true;
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            isRefreshingGps.value = false;
+            currentCoords.value = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+            };
+            if (props.activeDelivery) {
+                window.axios.post('/kurir/location', {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                }).catch((err) => console.warn('Sync GPS manual gagal:', err));
+            }
+        },
+        (err) => {
+            isRefreshingGps.value = false;
+            console.warn('Refresh GPS gagal:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+};
+
+// Background GPS Tracker saat ada tugas aktif
 const startGpsTracking = () => {
     if (!navigator.geolocation) return;
 
-    watchId = navigator.geolocation.watchPosition(
+    // Ambil posisi GPS fisik saat ini secara instan
+    navigator.geolocation.getCurrentPosition(
         (pos) => {
             currentCoords.value = {
                 lat: pos.coords.latitude,
                 lng: pos.coords.longitude,
             };
+            if (props.activeDelivery) {
+                window.axios.post('/kurir/location', {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                }).catch((err) => console.warn('Sync initial GPS gagal:', err));
+            }
         },
-        (err) => console.warn('GPS tracking error:', err.message),
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+        (err) => console.warn('GPS getCurrentPosition awal:', err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 
-    syncInterval = setInterval(() => {
-        const coords = getEffectiveCoords();
-        if (coords.lat && coords.lng) {
-            window.axios.post('/kurir/location', {
-                latitude: coords.lat,
-                longitude: coords.lng,
-            }).catch((err) => console.warn('Sync location gagal:', err));
-        }
-    }, 8000);
+    if (!watchId) {
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                currentCoords.value = {
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                };
+            },
+            (err) => console.warn('GPS tracking error:', err.message),
+            { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+        );
+    }
+
+    if (!syncInterval) {
+        syncInterval = setInterval(() => {
+            const coords = getEffectiveCoords();
+            if (coords.lat && coords.lng && props.activeDelivery) {
+                window.axios.post('/kurir/location', {
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                }).catch((err) => console.warn('Sync location gagal:', err));
+            }
+        }, 5000);
+    }
+};
+
+// Kalibrasi posisi kurir agar selalu akurat di koridor rute toko - tujuan
+const calibrateToRoute = (ratio = 0.6) => {
+    if (!props.activeDelivery) return;
+    const sLat = Number(props.activeDelivery.transaction.store_latitude || -6.989720);
+    const sLng = Number(props.activeDelivery.transaction.store_longitude || 110.421930);
+    const dLat = Number(props.activeDelivery.transaction.shipping_latitude || -6.992440);
+    const dLng = Number(props.activeDelivery.transaction.shipping_longitude || 110.428450);
+
+    const newLat = Number((sLat + (dLat - sLat) * ratio).toFixed(6));
+    const newLng = Number((sLng + (dLng - sLng) * ratio).toFixed(6));
+
+    // Langsung update posisi lokal agar marker di peta langsung berpindah secara realtime
+    currentCoords.value = { lat: newLat, lng: newLng };
+
+    window.axios.post('/kurir/location', {
+        latitude: newLat,
+        longitude: newLng,
+    }).catch((err) => console.warn('Gagal kalibrasi lokasi:', err));
 };
 
 const stopGpsTracking = () => {
@@ -290,7 +370,7 @@ const stopGpsTracking = () => {
 };
 
 onMounted(() => {
-    if (props.activeDelivery?.status === 'en_route') {
+    if (props.activeDelivery) {
         startGpsTracking();
     }
 });
@@ -390,24 +470,74 @@ onUnmounted(() => {
                     </ul>
                 </div>
 
-                <div v-if="activeDelivery.status === 'en_route'" class="rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-xs text-emerald-200">
-                    <div class="flex items-center gap-2 font-bold text-emerald-300">
-                        <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                        <span>📍 GPS Pelacakan Aktif Realtime</span>
+                <div v-if="activeDelivery.status === 'en_route'" class="rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-xs text-emerald-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 font-bold text-emerald-300">
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span>📍 GPS Pelacakan Aktif Realtime</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                :disabled="isRefreshingGps"
+                                class="inline-flex items-center gap-1 rounded-md bg-emerald-700/60 hover:bg-emerald-600/70 px-2 py-0.5 text-[10px] font-bold text-emerald-100 transition active:scale-95 disabled:opacity-50"
+                                @click="refreshGpsLocation"
+                            >
+                                <span :class="{ 'animate-spin': isRefreshingGps }">🔄</span>
+                                <span>Perbarui GPS</span>
+                            </button>
+                            <span v-if="displayCoords.lat && displayCoords.lng" class="text-[10px] font-mono text-emerald-300/80">
+                                {{ Number(displayCoords.lat).toFixed(4) }}, {{ Number(displayCoords.lng).toFixed(4) }}
+                            </span>
+                        </div>
                     </div>
-                    <p class="mt-1 text-emerald-200/80 leading-relaxed">Koordinat Anda disinkronkan berkala ke server setiap 8 detik agar pembeli dapat melacak garis rute & lokasi kurir secara akurat.</p>
+                    <p class="text-emerald-200/80 leading-relaxed text-[11px]">
+                        Koordinat GPS fisik Anda disinkronkan berkala ke server setiap 5 detik agar pembeli & admin dapat melihat garis rute jalan raya dan posisi kurir secara akurat.
+                    </p>
+                    <div class="pt-1 flex flex-wrap items-center gap-1.5 border-t border-emerald-500/20">
+                        <span class="text-[10px] text-emerald-300/70">Kalibrasi Rute:</span>
+                        <button
+                            type="button"
+                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
+                            title="Set posisi di awal rute toko"
+                            @click="calibrateToRoute(0.2)"
+                        >
+                            🏪 Awal (20%)
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
+                            title="Set posisi di pertengahan rute jalan"
+                            @click="calibrateToRoute(0.5)"
+                        >
+                            🛵 Tengah (50%)
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
+                            title="Set posisi mendekati alamat tujuan"
+                            @click="calibrateToRoute(0.85)"
+                        >
+                            📍 Dekat Tujuan (85%)
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Peta Rute & Titik Kurir -->
             <div class="rounded-xl border border-[#0d685b]/30 overflow-hidden shadow-inner">
                 <DeliveryMap
-                    :courier-lat="activeDelivery.current_lat || currentCoords.lat"
-                    :courier-lng="activeDelivery.current_lng || currentCoords.lng"
+                    :store-lat="activeDelivery.transaction.store_latitude"
+                    :store-lng="activeDelivery.transaction.store_longitude"
+                    :store-name="activeDelivery.transaction.store"
+                    :store-address="activeDelivery.transaction.store_address"
+                    :courier-lat="displayCoords.lat || activeDelivery.current_lat"
+                    :courier-lng="displayCoords.lng || activeDelivery.current_lng"
                     :dest-lat="activeDelivery.transaction.shipping_latitude"
                     :dest-lng="activeDelivery.transaction.shipping_longitude"
+                    :destination-address="activeDelivery.transaction.shipping_address"
                     :recipient-name="activeDelivery.transaction.recipient_name"
-                    :store-name="activeDelivery.transaction.store"
+                    :delivery-status="activeDelivery.status"
                     :route-history="activeDelivery.locations || []"
                 />
             </div>

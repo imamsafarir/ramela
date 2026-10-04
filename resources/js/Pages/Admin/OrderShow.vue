@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, router, useForm } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import AdminLayout from "../../Layouts/AdminLayout.vue";
 import DeliveryMap from "../../Components/DeliveryMap.vue";
 import { fmtDate, rupiah, statusClass } from "../../utils/format";
@@ -21,6 +21,31 @@ const form = useForm({ status: "", note: "" });
 const selectedCourierId = ref(props.order.delivery?.courier_id || "");
 const showReassign = ref(false);
 const isAssigning = ref(false);
+let pollTimer = null;
+const isRefreshing = ref(false);
+
+const refreshOrder = () => {
+    isRefreshing.value = true;
+    router.reload({
+        only: ["order"],
+        preserveScroll: true,
+        onFinish: () => {
+            isRefreshing.value = false;
+        },
+    });
+};
+
+onMounted(() => {
+    if (props.order.status === "shipping") {
+        pollTimer = setInterval(() => {
+            refreshOrder();
+        }, 5000);
+    }
+});
+
+onUnmounted(() => {
+    if (pollTimer) clearInterval(pollTimer);
+});
 
 const assignCourier = () => {
     if (!selectedCourierId.value) return;
@@ -278,13 +303,18 @@ const apply = (a) => {
                     class="rounded-2xl border border-[#0d685b]/30 overflow-hidden shadow-lg"
                 >
                     <DeliveryMap
+                        :store-lat="order.store_latitude"
+                        :store-lng="order.store_longitude"
+                        :store-name="order.store"
+                        :store-address="order.store_address"
                         :courier-lat="order.delivery?.current_lat"
                         :courier-lng="order.delivery?.current_lng"
                         :dest-lat="order.shipping_latitude"
                         :dest-lng="order.shipping_longitude"
-                        :route-history="order.delivery?.locations || []"
+                        :destination-address="order.shipping_address"
                         :recipient-name="order.recipient_name"
-                        :store-name="order.store"
+                        :delivery-status="order.delivery?.status"
+                        :route-history="order.delivery?.locations || []"
                     />
                 </div>
 

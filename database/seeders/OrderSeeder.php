@@ -414,12 +414,27 @@ class OrderSeeder extends Seeder
             default => 'waiting_pickup',
         };
 
-        // Koordinat tujuan & asal toko di area Semarang
+        // Koordinat Toko Asal & Alamat Tujuan
+        $storeLat = (float) ($t->store->latitude ?: -6.989720);
+        $storeLng = (float) ($t->store->longitude ?: 110.421930);
         $destLat = (float) ($t->shipping_latitude ?: -6.992440);
         $destLng = (float) ($t->shipping_longitude ?: 110.428450);
 
-        $curLat = $destLat + (rand(-100, 100) / 10000.0);
-        $curLng = $destLng + (rand(-100, 100) / 10000.0);
+        // Posisi Kurir yang Nyata Sesuai Status
+        if ($deliveryStatus === 'waiting_pickup') {
+            // Kurir berada di pangkalan/pos kurir atau sedang bergerak mendekati toko (berbeda dari titik toko)
+            $curLat = round($storeLat + 0.0032, 6);
+            $curLng = round($storeLng + 0.0038, 6);
+        } elseif ($deliveryStatus === 'en_route') {
+            // Kurir sedang dalam perjalanan nyata (antara 45% - 75% rute dari toko menuju tujuan)
+            $prog = rand(45, 75) / 100.0;
+            $curLat = round($storeLat + ($destLat - $storeLat) * $prog, 6);
+            $curLng = round($storeLng + ($destLng - $storeLng) * $prog, 6);
+        } else {
+            // Delivered: Kurir telah tiba di alamat tujuan
+            $curLat = $destLat;
+            $curLng = $destLng;
+        }
 
         $delivery = Delivery::create([
             'transaction_id' => $t->id,
@@ -432,14 +447,25 @@ class OrderSeeder extends Seeder
             'completed_at' => ($status === OrderStatus::Completed->value) ? $start->copy()->addMinutes(rand(90, 180)) : null,
         ]);
 
-        // Lokasi breadcrumbs
-        if (in_array($status, [OrderStatus::Shipping->value, OrderStatus::Completed->value], true)) {
-            for ($step = 1; $step <= 3; $step++) {
+        // Lokasi breadcrumbs realistis (berangkat dari toko menuju titik kurir / tujuan)
+        if ($deliveryStatus === 'en_route') {
+            $steps = [0.10, 0.25, 0.45, $prog];
+            foreach ($steps as $idx => $sProg) {
                 DeliveryLocation::create([
                     'delivery_id' => $delivery->id,
-                    'latitude' => $curLat - ($step * 0.002),
-                    'longitude' => $curLng - ($step * 0.002),
-                    'recorded_at' => $start->copy()->addMinutes($step * 15),
+                    'latitude' => round($storeLat + ($destLat - $storeLat) * $sProg, 6),
+                    'longitude' => round($storeLng + ($destLng - $storeLng) * $sProg, 6),
+                    'recorded_at' => $start->copy()->addMinutes(($idx + 1) * 8),
+                ]);
+            }
+        } elseif ($deliveryStatus === 'delivered') {
+            $steps = [0.15, 0.40, 0.70, 0.95, 1.0];
+            foreach ($steps as $idx => $sProg) {
+                DeliveryLocation::create([
+                    'delivery_id' => $delivery->id,
+                    'latitude' => round($storeLat + ($destLat - $storeLat) * $sProg, 6),
+                    'longitude' => round($storeLng + ($destLng - $storeLng) * $sProg, 6),
+                    'recorded_at' => $start->copy()->addMinutes(($idx + 1) * 10),
                 ]);
             }
         }
@@ -450,8 +476,8 @@ class OrderSeeder extends Seeder
                 'delivery_id' => $delivery->id,
                 'type' => 'pickup',
                 'path' => 'delivery/sample_pickup.jpg',
-                'latitude' => $curLat,
-                'longitude' => $curLng,
+                'latitude' => $storeLat,
+                'longitude' => $storeLng,
                 'taken_at' => $start->copy()->addMinutes(45),
             ]);
         }

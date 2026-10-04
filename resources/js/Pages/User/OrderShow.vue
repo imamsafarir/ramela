@@ -251,13 +251,18 @@ const waLink = computed(() => {
         <!-- PETA RUTE JALAN INTERAKTIF -->
         <div class="p-4 sm:p-5">
             <DeliveryMap
+                :store-lat="order.store_latitude"
+                :store-lng="order.store_longitude"
+                :store-name="order.store"
+                :store-address="order.store_address"
                 :courier-lat="order.delivery?.current_lat"
                 :courier-lng="order.delivery?.current_lng"
                 :dest-lat="order.shipping_latitude"
                 :dest-lng="order.shipping_longitude"
-                :route-history="order.delivery?.locations || []"
+                :destination-address="order.shipping_address"
                 :recipient-name="order.recipient_name"
-                :store-name="order.store"
+                :delivery-status="order.delivery?.status"
+                :route-history="order.delivery?.locations || []"
             />
         </div>
 

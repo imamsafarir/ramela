@@ -291,3 +291,75 @@ test('admin dapat memantau dan menugaskan kurir ke pesanan siap kirim', function
         ->and($delivery->courier_id)->toBe($courier->id)
         ->and($delivery->status)->toBe('waiting_pickup');
 });
+
+test('super admin dapat mengatur lokasi 3 toko di halaman pengaturan', function () {
+    $eats = $this->store;
+    $hampers = Store::create(['slug' => 'hampers', 'name' => 'RAMELA HAMPERS']);
+    $beton = Store::create(['slug' => 'beton', 'name' => 'RAMELA BETON']);
+
+    // 1. Super admin buka halaman pengaturan
+    $this->actingAs($this->superAdmin)->get('/admin/pengaturan')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/Settings')
+            ->has('stores', 3)
+            ->where('stores.0.slug', 'eats')
+            ->where('stores.1.slug', 'hampers')
+            ->where('stores.2.slug', 'beton'));
+
+    // 2. Super admin simpan pembaruan lokasi ketiga toko
+    $this->actingAs($this->superAdmin)->put('/admin/pengaturan', [
+        'is_production' => false,
+        'feature_blog' => true,
+        'feature_faq' => true,
+        'stores' => [
+            [
+                'id' => $eats->id,
+                'address' => 'Jl. Pandanaran Baru No. 99, Semarang',
+                'latitude' => -6.991234,
+                'longitude' => 110.421234,
+            ],
+            [
+                'id' => $hampers->id,
+                'address' => 'Jl. Pemuda Tengah No. 200, Semarang',
+                'latitude' => -6.974567,
+                'longitude' => 110.428567,
+            ],
+            [
+                'id' => $beton->id,
+                'address' => 'Kawasan Industri Wijayakusuma Blok C-10, Tugu, Semarang',
+                'latitude' => -6.981234,
+                'longitude' => 110.341234,
+            ],
+        ],
+    ])->assertSessionHasNoErrors();
+
+    // 3. Verifikasi data tersimpan di database
+    expect($eats->fresh()->address)->toBe('Jl. Pandanaran Baru No. 99, Semarang')
+        ->and($eats->fresh()->latitude)->toBe(-6.991234)
+        ->and($eats->fresh()->longitude)->toBe(110.421234);
+
+    expect($hampers->fresh()->address)->toBe('Jl. Pemuda Tengah No. 200, Semarang')
+        ->and($hampers->fresh()->latitude)->toBe(-6.974567)
+        ->and($hampers->fresh()->longitude)->toBe(110.428567);
+
+    expect($beton->fresh()->address)->toBe('Kawasan Industri Wijayakusuma Blok C-10, Tugu, Semarang')
+        ->and($beton->fresh()->latitude)->toBe(-6.981234)
+        ->and($beton->fresh()->longitude)->toBe(110.341234);
+
+    // 4. Validasi koordinat tidak valid (out of range)
+    $this->actingAs($this->superAdmin)->put('/admin/pengaturan', [
+        'is_production' => false,
+        'feature_blog' => true,
+        'feature_faq' => true,
+        'stores' => [
+            [
+                'id' => $eats->id,
+                'address' => 'Test',
+                'latitude' => 150.0, // Invalid: harus between -90 and 90
+                'longitude' => 110.0,
+            ],
+        ],
+    ])->assertSessionHasErrors('stores.0.latitude');
+});
+

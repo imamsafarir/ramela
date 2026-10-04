@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Store;
 use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,17 @@ class SettingsController extends Controller
             $secretState[$name] = $value ? '••••'.substr($value, -4) : null;
         }
 
+        $stores = Store::orderBy('sort_order')->get()->map(fn (Store $s) => [
+            'id' => $s->id,
+            'slug' => $s->slug,
+            'name' => $s->name,
+            'tagline' => $s->tagline,
+            'address' => $s->address,
+            'latitude' => $s->latitude,
+            'longitude' => $s->longitude,
+            'icon' => $s->icon,
+        ]);
+
         return Inertia::render('Admin/Settings', [
             'midtrans' => [
                 'is_production' => $settings->bool('midtrans.is_production'),
@@ -31,6 +43,7 @@ class SettingsController extends Controller
                 'blog' => $settings->bool('feature.blog', true),
                 'faq' => $settings->bool('feature.faq', true),
             ],
+            'stores' => $stores,
             'webhookUrl' => route('midtrans.notification'),
             'urls' => [
                 'update' => route('admin.settings.update'),
@@ -47,6 +60,11 @@ class SettingsController extends Controller
             'server_key' => ['nullable', 'string', 'max:200'],
             'feature_blog' => ['required', 'boolean'],
             'feature_faq' => ['required', 'boolean'],
+            'stores' => ['nullable', 'array'],
+            'stores.*.id' => ['required_with:stores', 'integer', 'exists:stores,id'],
+            'stores.*.address' => ['required_with:stores', 'string', 'max:500'],
+            'stores.*.latitude' => ['required_with:stores', 'numeric', 'between:-90,90'],
+            'stores.*.longitude' => ['required_with:stores', 'numeric', 'between:-180,180'],
         ]);
 
         $settings->set('midtrans.is_production', $data['is_production'] ? 'true' : 'false');
@@ -57,6 +75,19 @@ class SettingsController extends Controller
         foreach (self::SECRETS as $name) {
             if (filled($data[$name] ?? null)) {
                 $settings->set("midtrans.$name", trim($data[$name]), encrypted: true);
+            }
+        }
+
+        if (!empty($data['stores'])) {
+            foreach ($data['stores'] as $storeData) {
+                $store = Store::find($storeData['id']);
+                if ($store) {
+                    $store->update([
+                        'address' => trim($storeData['address']),
+                        'latitude' => (float) $storeData['latitude'],
+                        'longitude' => (float) $storeData['longitude'],
+                    ]);
+                }
             }
         }
 

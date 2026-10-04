@@ -32,13 +32,17 @@ class OrderController extends Controller
         // Dibatasi ke milik user: invoice orang lain => 404
         $t = $request->user()->transactions()
             ->where('invoice_number', $invoice)
-            ->with(['store:id,name', 'promo:id,code', 'details', 'statusLogs', 'delivery.courier:id,username,name,phone', 'delivery.photos', 'delivery.locations'])
+            ->with(['store', 'promo:id,code', 'details', 'statusLogs', 'delivery.courier:id,username,name,phone', 'delivery.photos', 'delivery.locations'])
             ->firstOrFail();
 
         return Inertia::render('User/OrderShow', [
             'order' => [
                 'invoice_number' => $t->invoice_number,
                 'store' => $t->store->name,
+                'store_slug' => $t->store->slug,
+                'store_address' => $t->store->address,
+                'store_latitude' => (float) $t->store->latitude,
+                'store_longitude' => (float) $t->store->longitude,
                 'status' => $t->status->value,
                 'status_label' => $t->status->label(),
                 'promo_code' => $t->promo?->code,
@@ -66,7 +70,7 @@ class OrderController extends Controller
                     'current_lat' => $t->delivery->current_lat,
                     'current_lng' => $t->delivery->current_lng,
                     'location_updated_at' => $t->delivery->location_updated_at?->toIso8601String(),
-                    'locations' => $t->delivery->locations()->orderBy('recorded_at')->take(100)->get(['latitude', 'longitude'])->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
+                    'locations' => $t->delivery->locations()->latest('recorded_at')->take(100)->get(['latitude', 'longitude'])->reverse()->values()->map(fn($l) => [(float) $l->latitude, (float) $l->longitude]),
                     'photos' => $t->delivery->photos->map(fn($p) => [
                         'type' => $p->type,
                         'url' => \Illuminate\Support\Facades\Storage::url($p->path),
