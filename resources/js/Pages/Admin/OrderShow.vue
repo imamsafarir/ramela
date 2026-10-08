@@ -81,6 +81,40 @@ const apply = (a) => {
         onSuccess: () => form.reset("note"),
     });
 };
+
+const computeDistanceKm = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Number((R * c).toFixed(1));
+};
+
+const estimateDurationText = (lat1, lon1, lat2, lon2) => {
+    const km = computeDistanceKm(lat1, lon1, lat2, lon2);
+    if (!km) return null;
+    const roadKm = km * 1.3;
+    const minutes = Math.max(5, Math.round((roadKm / 30) * 60) + 3);
+    if (minutes < 60) return `± ${minutes} menit (${km} km)`;
+    const hours = Math.floor(minutes / 60);
+    const rem = minutes % 60;
+    return `± ${hours} jam ${rem > 0 ? rem + ' mnt' : ''} (${km} km)`;
+};
+
+const getGoogleMapsDirUrl = (destLat, destLng, originLat = null, originLng = null) => {
+    if (!destLat || !destLng) return '#';
+    if (originLat && originLng) {
+        return `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+};
 </script>
 
 <template>
@@ -299,6 +333,51 @@ const apply = (a) => {
 
             <!-- Pelacakan Kurir Real-Time & Peta Rute Jalan -->
             <div v-if="order.delivery_type === 'courier'" class="space-y-4">
+                <!-- Header Pelacakan Kurir & Rute -->
+                <div class="rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4 shadow-lg text-[#f3f2e7]">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                                    Pelacakan Real-Time Kurir & Rute Jalan
+                                </h3>
+                            </div>
+                            <p class="text-xs text-[#f3f2e7]/70 mt-1">
+                                Peta rute jalan raya dari toko ke titik penerima.
+                                <span
+                                    v-if="estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude)"
+                                    class="text-emerald-300 font-semibold"
+                                >
+                                    Estimasi tempuh: {{ estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude) }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                :disabled="isRefreshing"
+                                class="inline-flex items-center gap-1 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/20 transition active:scale-95 disabled:opacity-50"
+                                @click="refreshOrder"
+                            >
+                                <span :class="{ 'animate-spin': isRefreshing }">🔄</span>
+                                <span>{{ isRefreshing ? 'Memperbarui...' : 'Perbarui' }}</span>
+                            </button>
+                            <a
+                                v-if="order.shipping_latitude && order.shipping_longitude"
+                                :href="getGoogleMapsDirUrl(order.shipping_latitude, order.shipping_longitude, order.store_latitude, order.store_longitude)"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 text-xs font-bold shadow-md shadow-blue-900/30 transition active:scale-95"
+                            >
+                                <span>🗺️</span>
+                                <span>Google Maps</span>
+                                <span class="text-[10px] opacity-75">↗</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div
                     class="rounded-2xl border border-[#0d685b]/30 overflow-hidden shadow-lg"
                 >

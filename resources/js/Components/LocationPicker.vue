@@ -179,14 +179,14 @@ const fetchStreetName = async (lat, lng) => {
             // Emit event lokasi lengkap
             emit("locationSelected", res.data);
 
-            // Auto-fill form fields jika masih kosong atau diminta
+            // Auto-fill form fields
             if (res.data.street_name) {
                 emit("update:address", res.data.formatted_address || res.data.street_name);
             }
-            if (res.data.district && !props.district) {
+            if (res.data.district) {
                 emit("update:district", res.data.district);
             }
-            if (res.data.postal_code && !props.postalCode) {
+            if (res.data.postal_code) {
                 emit("update:postalCode", res.data.postal_code);
             }
         }

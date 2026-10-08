@@ -138,11 +138,15 @@ class GeocodingService
             // Format kecamatan & kelurahan
             $districtFormatted = '';
             if ($district && $sublocality) {
-                $districtFormatted = "{$district}, {$sublocality}";
+                $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+                $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
             } elseif ($district) {
-                $districtFormatted = $district;
+                $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                $districtFormatted = "Kec. {$dName}";
             } elseif ($sublocality) {
-                $districtFormatted = $sublocality;
+                $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+                $districtFormatted = "Kel. {$sName}";
             }
 
             return [
@@ -205,19 +209,28 @@ class GeocodingService
                         $streetName = "{$road} No. {$houseNumber}";
                     }
 
-                    $suburb = $addr['suburb'] ?? $addr['village'] ?? $addr['quarter'] ?? $addr['hamlet'] ?? '';
-                    $district = $addr['city_district'] ?? $addr['county'] ?? $addr['municipality'] ?? '';
+                    $suburb = $addr['suburb'] ?? $addr['village'] ?? $addr['hamlet'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? '';
+                    $district = $addr['city_district'] ?? $addr['district'] ?? $addr['county'] ?? $addr['municipality'] ?? '';
                     $city = $addr['city'] ?? $addr['town'] ?? $addr['state_district'] ?? '';
                     $province = $addr['state'] ?? '';
                     $postcode = $addr['postcode'] ?? '';
 
+                    // Ekstrak kode pos 5 digit dari display_name jika belum terisi di address
+                    if (empty($postcode) && preg_match('/\b(\d{5})\b/', $data['display_name'] ?? '', $matches)) {
+                        $postcode = $matches[1];
+                    }
+
                     $districtFormatted = '';
                     if ($district && $suburb) {
-                        $districtFormatted = "{$district}, {$suburb}";
+                        $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                        $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
+                        $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
                     } elseif ($district) {
-                        $districtFormatted = $district;
+                        $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                        $districtFormatted = "Kec. {$dName}";
                     } elseif ($suburb) {
-                        $districtFormatted = $suburb;
+                        $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
+                        $districtFormatted = "Kel. {$sName}";
                     }
 
                     // Format alamat rapi

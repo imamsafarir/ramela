@@ -88,10 +88,10 @@ const onLocationSelected = (data) => {
     if (data.formatted_address || data.street_name) {
         form.shipping_address = data.formatted_address || data.street_name;
     }
-    if (data.district && !form.shipping_district) {
+    if (data.district) {
         form.shipping_district = data.district;
     }
-    if (data.postal_code && !form.shipping_postal_code) {
+    if (data.postal_code) {
         form.shipping_postal_code = data.postal_code;
     }
 };
@@ -126,6 +126,7 @@ const input =
     <div class="mt-6 grid gap-6 lg:grid-cols-12">
         <!-- FORM PENGIRIMAN & PENERIMA -->
         <form
+            id="checkout-form"
             class="space-y-5 rounded-2xl bg-[#1c2a25] p-4.5 sm:p-6 border border-[#0d685b]/30 shadow-xl lg:col-span-7"
             @submit.prevent="submit"
         >
@@ -320,23 +321,6 @@ const input =
                     :placeholder="form.delivery_type === 'courier' ? 'Misal: titip di pos satpam, pagar hitam...' : 'Misal: akan diambil pukul 14.00 oleh adik saya...'"
                 />
             </div>
-
-            <p
-                v-if="form.errors.checkout"
-                class="rounded-xl bg-rose-950/40 border border-rose-500/40 px-4 py-2.5 text-xs text-rose-200"
-            >
-                {{ form.errors.checkout }}
-            </p>
-
-            <button
-                :disabled="form.processing || kurang || (form.delivery_type === 'courier' && !form.shipping_rate_id)"
-                class="w-full rounded-xl bg-[#0d685b] hover:bg-[#117c6d] py-3 text-sm font-bold text-[#f3f2e7] shadow-md shadow-[#0d685b]/30 transition disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed"
-            >
-                Bayar {{ rupiah(final) }} dengan Saldo Dompet
-            </button>
-            <p v-if="kurang" class="text-xs font-semibold text-rose-400">
-                ⚠️ Saldo tidak cukup (saldo {{ rupiah(saldo) }}). Silakan isi saldo terlebih dahulu.
-            </p>
         </form>
 
         <!-- RINGKASAN PESANAN -->
@@ -420,6 +404,42 @@ const input =
             <div class="mt-3 flex items-center justify-between rounded-xl bg-[#131d1a] border border-[#0d685b]/30 p-2.5 text-xs">
                 <span class="text-[#f3f2e7]/60">Saldo Anda:</span>
                 <span class="font-bold" :class="kurang ? 'text-rose-400' : 'text-emerald-300'">{{ rupiah(saldo) }}</span>
+            </div>
+
+            <!-- Pesan Error / Validasi -->
+            <p
+                v-if="form.errors.checkout"
+                class="mt-3 rounded-xl bg-rose-950/40 border border-rose-500/40 px-3.5 py-2 text-xs text-rose-200"
+            >
+                {{ form.errors.checkout }}
+            </p>
+
+            <div v-if="kurang" class="mt-3 rounded-xl bg-rose-950/40 border border-rose-500/40 p-3 text-xs text-rose-200 space-y-1.5">
+                <p class="font-semibold">⚠️ Saldo dompet Anda tidak cukup.</p>
+                <p class="text-[11px] text-rose-300/80">
+                    Dibutuhkan <strong class="text-white">{{ rupiah(final) }}</strong>, saldo saat ini <strong class="text-white">{{ rupiah(saldo) }}</strong>.
+                </p>
+                <div class="pt-1">
+                    <Link
+                        href="/topup"
+                        class="inline-flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 underline"
+                    >
+                        💳 Isi Saldo Dompet Sekarang →
+                    </Link>
+                </div>
+            </div>
+
+            <!-- TOMBOL BAYAR SEKARANG -->
+            <div class="mt-4 pt-2">
+                <button
+                    type="submit"
+                    form="checkout-form"
+                    :disabled="form.processing || kurang || (form.delivery_type === 'courier' && !form.shipping_rate_id)"
+                    class="w-full rounded-xl bg-[#0d685b] hover:bg-[#117c6d] py-3.5 px-4 text-sm font-bold text-[#f3f2e7] shadow-lg shadow-[#0d685b]/30 transition disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2"
+                >
+                    <span v-if="form.processing" class="animate-spin">🔄</span>
+                    <span>Bayar {{ rupiah(final) }} dengan Saldo</span>
+                </button>
             </div>
 
             <div class="mt-4 text-center">

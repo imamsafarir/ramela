@@ -50,6 +50,40 @@ const waLink = computed(() => {
     );
     return `https://wa.me/${clean}?text=${msg}`;
 });
+
+const computeDistanceKm = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Number((R * c).toFixed(1));
+};
+
+const estimateDurationText = (lat1, lon1, lat2, lon2) => {
+    const km = computeDistanceKm(lat1, lon1, lat2, lon2);
+    if (!km) return null;
+    const roadKm = km * 1.3;
+    const minutes = Math.max(5, Math.round((roadKm / 30) * 60) + 3);
+    if (minutes < 60) return `± ${minutes} menit (${km} km)`;
+    const hours = Math.floor(minutes / 60);
+    const rem = minutes % 60;
+    return `± ${hours} jam ${rem > 0 ? rem + ' mnt' : ''} (${km} km)`;
+};
+
+const getGoogleMapsDirUrl = (destLat, destLng, originLat = null, originLng = null) => {
+    if (!destLat || !destLng) return '#';
+    if (originLat && originLng) {
+        return `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+};
 </script>
 
 <template>
@@ -179,7 +213,13 @@ const waLink = computed(() => {
             </div>
 
             <!-- Tombol Refresh & Indikator -->
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <span
+                    v-if="estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude)"
+                    class="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-1 text-[11px] font-bold text-emerald-300"
+                >
+                    🛵 Estimasi Toko: {{ estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude) }}
+                </span>
                 <button
                     v-if="order.status === 'shipping'"
                     type="button"
@@ -193,6 +233,18 @@ const waLink = computed(() => {
                         isRefreshing ? "Memperbarui..." : "Perbarui Posisi"
                     }}</span>
                 </button>
+                <a
+                    v-if="order.shipping_latitude && order.shipping_longitude"
+                    :href="getGoogleMapsDirUrl(order.shipping_latitude, order.shipping_longitude, order.store_latitude, order.store_longitude)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 text-xs font-bold shadow-md shadow-blue-900/30 transition active:scale-95"
+                    title="Buka rute pengiriman di Google Maps"
+                >
+                    <span>🗺️</span>
+                    <span>Google Maps</span>
+                    <span class="text-[10px] opacity-75">↗</span>
+                </a>
             </div>
         </div>
 

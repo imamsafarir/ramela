@@ -41,6 +41,46 @@ const formatWeight = (w) => {
         : num.toLocaleString('id-ID') + ' g';
 };
 
+// Hitung jarak garis lurus haversine (km)
+const computeDistanceKm = (lat1, lon1, lat2, lon2) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371; // Radius bumi dalam km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Number((R * c).toFixed(1));
+};
+
+// Estimasi durasi tempuh motor (asumsi kecepatan rata-rata perkotaan 30 km/jam + buffer 3-5 menit)
+const estimateDurationText = (lat1, lon1, lat2, lon2) => {
+    const km = computeDistanceKm(lat1, lon1, lat2, lon2);
+    if (!km) return null;
+    // Jarak jalan raya perkotaan biasanya ~1.3x jarak garis lurus
+    const roadKm = km * 1.3;
+    const minutes = Math.max(5, Math.round((roadKm / 30) * 60) + 3);
+    if (minutes < 60) {
+        return `± ${minutes} menit (${km} km)`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMins = minutes % 60;
+    return `± ${hours} jam ${remainingMins > 0 ? remainingMins + ' mnt' : ''} (${km} km)`;
+};
+
+// URL navigasi Google Maps
+const getGoogleMapsDirUrl = (destLat, destLng, originLat = null, originLng = null) => {
+    if (!destLat || !destLng) return '#';
+    if (originLat && originLng) {
+        return `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+};
+
 // Koordinat yang diinjeksi dari CourierLayout (sudah dipastikan GPS aktif)
 const layoutCoords = inject('courierCoords', null);
 
@@ -451,13 +491,87 @@ onUnmounted(() => {
 
         <div class="mt-5 grid gap-6 lg:grid-cols-2">
             <div class="space-y-4">
-                <div class="rounded-xl border border-[#0d685b]/20 bg-[#131d1a] p-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-[#0d685b]">Alamat Tujuan Pengiriman</h3>
-                    <p class="mt-1 text-base font-bold text-[#f3f2e7]">{{ activeDelivery.transaction.recipient_name }} <span class="text-xs font-medium text-[#f3f2e7]/60">({{ activeDelivery.transaction.recipient_phone }})</span></p>
-                    <p class="mt-1.5 whitespace-pre-line text-sm text-[#f3f2e7]/80 leading-relaxed">{{ activeDelivery.transaction.shipping_address }}</p>
-                    <p v-if="activeDelivery.transaction.note" class="mt-2 text-xs italic text-amber-300/80 bg-amber-500/10 p-2 rounded border border-amber-500/20">
-                        Catatan: {{ activeDelivery.transaction.note }}
+                <div class="rounded-xl border border-[#0d685b]/30 bg-[#131d1a] p-4.5 space-y-3">
+                    <div class="flex items-center justify-between border-b border-[#0d685b]/20 pb-2">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                            <span>📍</span> Titik Tujuan Pengiriman
+                        </h3>
+                        <span
+                            v-if="estimateDurationText(activeDelivery.transaction.store_latitude, activeDelivery.transaction.store_longitude, activeDelivery.transaction.shipping_latitude, activeDelivery.transaction.shipping_longitude)"
+                            class="inline-flex items-center gap-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300"
+                        >
+                            🛵 {{ estimateDurationText(activeDelivery.transaction.store_latitude, activeDelivery.transaction.store_longitude, activeDelivery.transaction.shipping_latitude, activeDelivery.transaction.shipping_longitude) }} dari Toko
+                        </span>
+                    </div>
+
+                    <!-- Penerima & Kontak -->
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-base font-bold text-[#f3f2e7]">
+                                {{ activeDelivery.transaction.recipient_name }}
+                            </p>
+                            <p class="text-xs text-[#f3f2e7]/70">
+                                {{ activeDelivery.transaction.recipient_phone }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a
+                                v-if="activeDelivery.transaction.recipient_phone"
+                                :href="`tel:${activeDelivery.transaction.recipient_phone}`"
+                                class="inline-flex items-center gap-1 rounded-lg border border-[#0d685b]/40 bg-[#1c2a25] px-2.5 py-1 text-xs font-semibold text-sky-300 hover:bg-[#131d1a] transition"
+                            >
+                                📞 Telepon
+                            </a>
+                            <a
+                                v-if="activeDelivery.transaction.recipient_phone"
+                                :href="`https://wa.me/${activeDelivery.transaction.recipient_phone.replace(/^0/, '62').replace(/[^0-9]/g, '')}`"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-1 rounded-lg bg-emerald-600/80 hover:bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white transition"
+                            >
+                                💬 WhatsApp
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Alamat Lengkap & Wilayah -->
+                    <div>
+                        <p class="whitespace-pre-line text-sm text-[#f3f2e7]/90 leading-relaxed font-medium">
+                            {{ activeDelivery.transaction.shipping_address }}
+                        </p>
+                        <p
+                            v-if="activeDelivery.transaction.shipping_district || activeDelivery.transaction.shipping_city"
+                            class="mt-1 text-xs text-[#f3f2e7]/60"
+                        >
+                            {{ [activeDelivery.transaction.shipping_district, activeDelivery.transaction.shipping_city, activeDelivery.transaction.shipping_postal_code].filter(Boolean).join(', ') }}
+                        </p>
+                    </div>
+
+                    <p v-if="activeDelivery.transaction.note" class="text-xs italic text-amber-300/90 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                        Catatan Penerima: {{ activeDelivery.transaction.note }}
                     </p>
+
+                    <!-- Tombol Navigasi Google Maps -->
+                    <div class="pt-1 border-t border-[#0d685b]/20 flex flex-wrap items-center gap-2">
+                        <a
+                            :href="getGoogleMapsDirUrl(
+                                activeDelivery.transaction.shipping_latitude,
+                                activeDelivery.transaction.shipping_longitude,
+                                displayCoords.lat || activeDelivery.transaction.store_latitude,
+                                displayCoords.lng || activeDelivery.transaction.store_longitude
+                            )"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 text-xs font-bold shadow-md shadow-blue-900/30 transition active:scale-95"
+                        >
+                            <span>🗺️</span>
+                            <span>Buka Navigasi di Google Maps</span>
+                            <span class="text-[10px] opacity-75">↗</span>
+                        </a>
+                        <span class="text-[11px] text-[#f3f2e7]/50">
+                            Peta utama di sebelah kanan menggunakan Leaflet OpenStreetMap.
+                        </span>
+                    </div>
                 </div>
 
                 <div class="rounded-xl border border-[#0d685b]/20 bg-[#131d1a] p-4">
@@ -648,6 +762,30 @@ onUnmounted(() => {
                         <p v-if="order.note" class="mt-2 text-xs italic text-amber-300/80 bg-amber-500/10 p-1.5 rounded border border-amber-500/20">
                             Catatan: {{ order.note }}
                         </p>
+
+                        <!-- Estimasi Waktu & Lokasi Google Maps -->
+                        <div class="mt-2.5 pt-2 border-t border-[#0d685b]/20 flex flex-wrap items-center justify-between gap-2">
+                            <span
+                                v-if="estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude)"
+                                class="inline-flex items-center gap-1 rounded-md bg-emerald-950/70 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-300"
+                            >
+                                🛵 Estimasi Toko: {{ estimateDurationText(order.store_latitude, order.store_longitude, order.shipping_latitude, order.shipping_longitude) }}
+                            </span>
+                            <span v-else class="text-[10px] text-[#f3f2e7]/40">
+                                📍 Koordinat tujuan tersedia
+                            </span>
+
+                            <a
+                                v-if="order.shipping_latitude && order.shipping_longitude"
+                                :href="getGoogleMapsDirUrl(order.shipping_latitude, order.shipping_longitude, order.store_latitude, order.store_longitude)"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 underline"
+                                title="Lihat rute di Google Maps"
+                            >
+                                🗺️ Buka Rute Google Maps ↗
+                            </a>
+                        </div>
                     </div>
                 </div>
 
