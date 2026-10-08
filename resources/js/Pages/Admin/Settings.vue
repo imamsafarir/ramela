@@ -2,12 +2,14 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import L from 'leaflet';
+import axios from 'axios';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 
 defineOptions({ layout: AdminLayout });
 
 const props = defineProps({
     midtrans: Object,
+    google: Object,
     features: Object,
     stores: {
         type: Array,
@@ -61,6 +63,7 @@ const form = useForm({
     merchant_id: '',
     client_key: '',
     server_key: '',
+    google_maps_api_key: '',
     feature_blog: props.features.blog,
     feature_faq: props.features.faq,
     stores: (props.stores || []).map((s) => ({
@@ -86,7 +89,7 @@ const copyWebhook = () => {
 const submit = () => {
     form.put('/admin/pengaturan', {
         preserveScroll: true,
-        onSuccess: () => form.reset('merchant_id', 'client_key', 'server_key'),
+        onSuccess: () => form.reset('merchant_id', 'client_key', 'server_key', 'google_maps_api_key'),
     });
 };
 
@@ -97,6 +100,25 @@ const secrets = [
     ['server_key', 'Server Key'],
 ];
 
+// Geocoding helper untuk nama jalan toko
+const storeGeocoding = ref({});
+const fetchStoreStreetName = async (index, lat, lng) => {
+    if (!lat || !lng || isNaN(Number(lat)) || isNaN(Number(lng))) return;
+    storeGeocoding.value[index] = true;
+    try {
+        const res = await axios.get('/api/location/reverse', {
+            params: { lat: Number(lat), lng: Number(lng) },
+        });
+        if (res.data?.success && (res.data.formatted_address || res.data.street_name)) {
+            form.stores[index].address = res.data.formatted_address || res.data.street_name;
+        }
+    } catch (e) {
+        console.warn('Gagal mengambil nama jalan:', e);
+    } finally {
+        storeGeocoding.value[index] = false;
+    }
+};
+
 // Geolocation helper
 const geoLoading = ref({});
 const getCurrentLocation = (index) => {
@@ -106,11 +128,14 @@ const getCurrentLocation = (index) => {
     }
     geoLoading.value[index] = true;
     navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            form.stores[index].latitude = Number(pos.coords.latitude.toFixed(6));
-            form.stores[index].longitude = Number(pos.coords.longitude.toFixed(6));
-            geoLoading.value[index] = false;
+        async (pos) => {
+            const lat = Number(pos.coords.latitude.toFixed(6));
+            const lng = Number(pos.coords.longitude.toFixed(6));
+            form.stores[index].latitude = lat;
+            form.stores[index].longitude = lng;
             syncMarkersFromInputs();
+            await fetchStoreStreetName(index, lat, lng);
+            geoLoading.value[index] = false;
         },
         (err) => {
             geoLoading.value[index] = false;
@@ -192,10 +217,13 @@ const initMap = () => {
                 </div>
             `);
 
-            marker.on('dragend', (e) => {
+            marker.on('dragend', async (e) => {
                 const pos = e.target.getLatLng();
-                form.stores[i].latitude = Number(pos.lat.toFixed(6));
-                form.stores[i].longitude = Number(pos.lng.toFixed(6));
+                const lat = Number(pos.lat.toFixed(6));
+                const lng = Number(pos.lng.toFixed(6));
+                form.stores[i].latitude = lat;
+                form.stores[i].longitude = lng;
+                await fetchStoreStreetName(i, lat, lng);
             });
 
             mapMarkers[i] = marker;
@@ -226,10 +254,13 @@ const syncMarkersFromInputs = () => {
                     draggable: true,
                 }).addTo(map);
 
-                marker.on('dragend', (e) => {
+                marker.on('dragend', async (e) => {
                     const pos = e.target.getLatLng();
-                    form.stores[i].latitude = Number(pos.lat.toFixed(6));
-                    form.stores[i].longitude = Number(pos.lng.toFixed(6));
+                    const lat = Number(pos.lat.toFixed(6));
+                    const lng = Number(pos.lng.toFixed(6));
+                    form.stores[i].latitude = lat;
+                    form.stores[i].longitude = lng;
+                    await fetchStoreStreetName(i, lat, lng);
                 });
                 mapMarkers[i] = marker;
             }
@@ -387,6 +418,17 @@ onUnmounted(() => {
                                     <span>Google Maps</span>
                                     <span>↗</span>
                                 </a>
+
+                                <button
+                                    type="button"
+                                    :disabled="storeGeocoding[index]"
+                                    class="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20 transition disabled:opacity-50 cursor-pointer"
+                                    title="Ambil nama jalan otomatis dari titik koordinat"
+                                    @click="fetchStoreStreetName(index, store.latitude, store.longitude)"
+                                >
+                                    <span>{{ storeGeocoding[index] ? '⏳' : '📍' }}</span>
+                                    <span>{{ storeGeocoding[index] ? 'Mengambil...' : 'Ambil Nama Jalan' }}</span>
+                                </button>
 
                                 <button
                                     type="button"
@@ -577,6 +619,50 @@ onUnmounted(() => {
                         <div class="mt-2.5 rounded-xl bg-[#17231f] p-2.5 text-xs font-mono text-emerald-300 break-all select-all border border-[#0d685b]/30">
                             {{ webhookUrl }}
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION GOOGLE MAPS & REVERSE GEOCODING NAMA JALAN -->
+            <div class="overflow-hidden rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-4.5 sm:p-6 shadow-xl text-[#f3f2e7]">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#0d685b]/20 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b]/30 text-xl text-[#f3f2e7]">
+                            🗺️
+                        </span>
+                        <div>
+                            <h2 class="text-base font-black text-[#f3f2e7]">Peta & Deteksi Nama Jalan (OpenStreetMap & Google Maps)</h2>
+                            <p class="text-xs text-[#f3f2e7]/60">
+                                Sistem secara default menggunakan <strong>OpenStreetMap (100% Gratis)</strong> untuk peta dan deteksi nama jalan. Google Maps API Key bersifat opsional.
+                            </p>
+                        </div>
+                    </div>
+                    <span
+                        class="rounded-full px-3 py-1 text-[11px] font-bold"
+                        :class="google?.has_key ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'"
+                    >
+                        {{ google?.has_key ? `● Google Maps Aktif (${google.key_hint})` : '● OpenStreetMap Aktif (100% Gratis)' }}
+                    </span>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0d685b]">
+                            Google Maps API Key (Opsional — Boleh Dikosongkan)
+                        </label>
+                        <input
+                            v-model="form.google_maps_api_key"
+                            type="password"
+                            autocomplete="off"
+                            :class="inputClass"
+                            :placeholder="google?.has_key ? `Tersimpan (${google.key_hint}) — biarkan kosong jika tidak diubah` : 'Biarkan kosong untuk memakai OpenStreetMap gratis'"
+                        />
+                        <p class="mt-1.5 text-[11px] text-[#f3f2e7]/60 leading-relaxed">
+                            💡 Tanpa API Key Google, form pemesanan pelanggan dan pengaturan toko tetap berfungsi 100% normal mengambil nama jalan dan menampilkan peta via OpenStreetMap gratis.
+                        </p>
+                        <p v-if="form.errors.google_maps_api_key" class="mt-1 text-xs text-rose-400">
+                            {{ form.errors.google_maps_api_key }}
+                        </p>
                     </div>
                 </div>
             </div>

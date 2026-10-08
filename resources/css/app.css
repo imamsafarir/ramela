@@ -15,7 +15,8 @@
 }
 
 /* Base styles for standalone PWA & notch rendering */
-html, body {
+html,
+body {
     background-color: #17231f;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
@@ -34,7 +35,10 @@ html, body {
 }
 
 .pb-safe {
-    padding-bottom: max(1.25rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)));
+    padding-bottom: max(
+        1.25rem,
+        calc(0.75rem + env(safe-area-inset-bottom, 0px))
+    );
 }
 
 .pl-safe {
@@ -56,14 +60,26 @@ html, body {
 
 @media (min-width: 640px) {
     .px-safe {
-        padding-left: max(1.5rem, calc(1.5rem + env(safe-area-inset-left, 0px)));
-        padding-right: max(1.5rem, calc(1.5rem + env(safe-area-inset-right, 0px)));
+        padding-left: max(
+            1.5rem,
+            calc(1.5rem + env(safe-area-inset-left, 0px))
+        );
+        padding-right: max(
+            1.5rem,
+            calc(1.5rem + env(safe-area-inset-right, 0px))
+        );
     }
     .pl-safe {
-        padding-left: max(1.5rem, calc(1.5rem + env(safe-area-inset-left, 0px)));
+        padding-left: max(
+            1.5rem,
+            calc(1.5rem + env(safe-area-inset-left, 0px))
+        );
     }
     .pr-safe {
-        padding-right: max(1.5rem, calc(1.5rem + env(safe-area-inset-right, 0px)));
+        padding-right: max(
+            1.5rem,
+            calc(1.5rem + env(safe-area-inset-right, 0px))
+        );
     }
 }
 
@@ -89,7 +105,10 @@ html, body {
    so buttons are elevated and never overlapped or accidentally pressed.
 */
 .bottom-nav-safe {
-    padding-bottom: max(0.65rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
+    padding-bottom: max(
+        0.65rem,
+        calc(0.5rem + env(safe-area-inset-bottom, 0px))
+    );
 }
 
 /* Main content bottom clearance:
@@ -104,4 +123,3 @@ html, body {
 #snap-midtrans {
     z-index: 999999 !important;
 }
-

@@ -1,4 +1,5 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
 import PublicLayout from "../Layouts/PublicLayout.vue";
 
@@ -8,6 +9,80 @@ defineProps({
     stores: Array,
     recentBlogs: Array,
     faqs: Array,
+});
+
+// Animasi Typing Text Efek Interaktif
+const typingPhrases = [
+    "Ramela Eats (Kuliner Lezat)",
+    "Ramela Hampers (Bingkisan & Hadiah)",
+    "Ramela Beton (Material Konstruksi)",
+    "Satu Dompet & Kurir Terpadu"
+];
+
+const currentTypedText = ref("");
+let phraseIndex = 0;
+let charIndex = 0;
+let isDeleting = false;
+let typingTimeout = null;
+
+const runTypingLoop = () => {
+    const currentFullText = typingPhrases[phraseIndex];
+
+    if (!isDeleting) {
+        currentTypedText.value = currentFullText.substring(0, charIndex + 1);
+        charIndex++;
+
+        if (charIndex === currentFullText.length) {
+            // Jeda sejenak saat teks sudah lengkap
+            isDeleting = true;
+            typingTimeout = setTimeout(runTypingLoop, 2000);
+            return;
+        }
+        typingTimeout = setTimeout(runTypingLoop, 85);
+    } else {
+        currentTypedText.value = currentFullText.substring(0, charIndex - 1);
+        charIndex--;
+
+        if (charIndex === 0) {
+            isDeleting = false;
+            phraseIndex = (phraseIndex + 1) % typingPhrases.length;
+            typingTimeout = setTimeout(runTypingLoop, 400);
+            return;
+        }
+        typingTimeout = setTimeout(runTypingLoop, 45);
+    }
+};
+
+let observer = null;
+
+onMounted(() => {
+    // Jalankan typing effect
+    runTypingLoop();
+
+    // Jalankan scroll reveal menggunakan IntersectionObserver
+    observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("reveal-active");
+                    // Once revealed, unobserve to maintain smooth rendering
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        {
+            threshold: 0.12,
+            rootMargin: "0px 0px -40px 0px"
+        }
+    );
+
+    const revealElements = document.querySelectorAll(".reveal-init");
+    revealElements.forEach((el) => observer.observe(el));
+});
+
+onUnmounted(() => {
+    if (typingTimeout) clearTimeout(typingTimeout);
+    if (observer) observer.disconnect();
 });
 </script>
 
@@ -19,7 +94,7 @@ defineProps({
         />
     </Head>
 
-    <div class="bg-[#17231f] text-[#f3f2e7]">
+    <div class="bg-[#17231f] text-[#f3f2e7] animate-page-fade">
         <!-- HERO SECTION -->
         <section class="relative overflow-hidden py-20 md:py-28">
             <!-- Background Orbs Glow -->
@@ -53,9 +128,18 @@ defineProps({
                     <span class="text-teal-300">Ramela Beton</span>
                 </h1>
 
+                <!-- Animasi Tulisan Typing Interaktif -->
+                <div class="mt-4 flex items-center justify-center gap-2 text-sm sm:text-base font-semibold text-emerald-300 min-h-[30px]">
+                    <span class="text-[#f3f2e7]/60">Sekarang Melayani:</span>
+                    <span class="font-bold text-emerald-300 border-b border-emerald-500/40 pb-0.5">
+                        {{ currentTypedText }}
+                    </span>
+                    <span class="animate-cursor-blink text-emerald-400"></span>
+                </div>
+
                 <!-- Deskripsi Pendukung -->
                 <p
-                    class="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-[#f3f2e7]/80 leading-relaxed"
+                    class="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-[#f3f2e7]/80 leading-relaxed"
                 >
                     Dengan satu aplikasi dilengkapi layanan dompet digital dan
                     pelacakan kurir terpadu.
@@ -82,11 +166,11 @@ defineProps({
         </section>
 
         <!-- 3 FITUR UTAMA DALAM SATU APLIKASI -->
-        <section class="border-y border-[#0d685b]/30 bg-[#131d1a]/80 py-12">
+        <section class="border-y border-[#0d685b]/30 bg-[#131d1a]/80 py-12 reveal-init">
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="grid gap-6 sm:grid-cols-3">
                     <div
-                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs"
+                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs reveal-init"
                     >
                         <div
                             class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-white"
@@ -105,7 +189,7 @@ defineProps({
                     </div>
 
                     <div
-                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs"
+                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs reveal-init"
                     >
                         <div
                             class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-white"
@@ -124,7 +208,7 @@ defineProps({
                     </div>
 
                     <div
-                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs"
+                        class="rounded-2xl border border-[#0d685b]/40 bg-[#1c2a25]/60 p-5 backdrop-blur-xs reveal-init"
                     >
                         <div
                             class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0d685b] text-lg text-white"
@@ -146,7 +230,7 @@ defineProps({
         </section>
 
         <!-- SECTION 3 LAYANAN UTAMA RAMELA -->
-        <section id="layanan" class="py-20 md:py-28">
+        <section id="layanan" class="py-20 md:py-28 reveal-init">
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <span
@@ -175,7 +259,7 @@ defineProps({
                 <div class="mt-12 grid gap-6 md:grid-cols-3">
                     <!-- 1. RAMELA EATS -->
                     <div
-                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-emerald-400/60 hover:-translate-y-1 transition duration-200"
+                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-emerald-400/60 hover:-translate-y-1 transition duration-200 reveal-init"
                     >
                         <div>
                             <div class="flex items-center justify-between">
@@ -222,7 +306,7 @@ defineProps({
 
                     <!-- 2. RAMELA HAMPERS -->
                     <div
-                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-pink-400/60 hover:-translate-y-1 transition duration-200"
+                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-pink-400/60 hover:-translate-y-1 transition duration-200 reveal-init"
                     >
                         <div>
                             <div class="flex items-center justify-between">
@@ -267,7 +351,7 @@ defineProps({
 
                     <!-- 3. RAMELA BETON -->
                     <div
-                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-cyan-400/60 hover:-translate-y-1 transition duration-200"
+                        class="group flex flex-col justify-between rounded-3xl border border-[#0d685b]/40 bg-[#1c2a25] p-7 shadow-xl hover:border-cyan-400/60 hover:-translate-y-1 transition duration-200 reveal-init"
                     >
                         <div>
                             <div class="flex items-center justify-between">
@@ -313,7 +397,7 @@ defineProps({
         </section>
 
         <!-- BANNER CALL TO ACTION BAWAH -->
-        <section class="py-12">
+        <section class="py-12 reveal-init">
             <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                 <div
                     class="relative overflow-hidden rounded-3xl border border-[#0d685b]/50 bg-gradient-to-r from-[#0d685b] to-[#14231f] p-6 sm:p-12 text-center shadow-2xl"
@@ -349,7 +433,7 @@ defineProps({
         <!-- BLOG PREVIEW -->
         <section
             v-if="recentBlogs?.length"
-            class="border-t border-[#0d685b]/30 bg-[#131d1a]/60 py-16"
+            class="border-t border-[#0d685b]/30 bg-[#131d1a]/60 py-16 reveal-init"
         >
             <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between">
@@ -419,7 +503,7 @@ defineProps({
         </section>
 
         <!-- FAQ PREVIEW -->
-        <section v-if="faqs?.length" class="py-16 md:py-20">
+        <section v-if="faqs?.length" class="py-16 md:py-20 reveal-init">
             <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <h2 class="text-xl font-black text-[#f3f2e7] sm:text-2xl">

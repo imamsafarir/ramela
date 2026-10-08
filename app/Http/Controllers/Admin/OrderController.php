@@ -36,6 +36,7 @@ class OrderController extends Controller
         $orders = Transaction::with(['store:id,name', 'user:id,username', 'promo:id,code'])
             ->when($request->query('store'), fn($q, $s) => $q->where('store_id', $s))
             ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
+            ->when($request->query('delivery_type'), fn($q, $dt) => $q->where('delivery_type', $dt))
             ->when($request->query('today'), fn($q) => $q->whereDate('created_at', today()))
             ->when($request->query('q'), function ($q, $t) {
                 $like = '%' . addcslashes($t, '%_\\') . '%';
@@ -64,11 +65,21 @@ class OrderController extends Controller
                 'created_at' => $t->created_at->toIso8601String(),
             ]);
 
+        $stats = [
+            'total_orders' => Transaction::count(),
+            'today_orders' => Transaction::whereDate('created_at', today())->count(),
+            'paid_orders' => Transaction::where('status', OrderStatus::Paid->value)->count(),
+            'ready_orders' => Transaction::whereIn('status', [OrderStatus::ReadyToShip->value, OrderStatus::ReadyForPickup->value])->count(),
+            'shipping_orders' => Transaction::where('status', OrderStatus::Shipping->value)->count(),
+            'completed_orders' => Transaction::where('status', OrderStatus::Completed->value)->count(),
+        ];
+
         return Inertia::render('Admin/Orders', [
             'orders' => $orders,
             'stores' => Store::orderBy('sort_order')->get(['id', 'name']),
             'statuses' => collect(OrderStatus::cases())->map(fn($s) => ['value' => $s->value, 'label' => $s->label()]),
-            'filters' => $request->only('store', 'status', 'today', 'q', 'sort', 'dir'),
+            'filters' => $request->only('store', 'status', 'delivery_type', 'today', 'q', 'sort', 'dir'),
+            'stats' => $stats,
         ]);
     }
 

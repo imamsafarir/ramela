@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref, watch } from "vue";
 import UserLayout from "../../Layouts/UserLayout.vue";
+import LocationPicker from "../../Components/LocationPicker.vue";
 import { rupiah } from "../../utils/format";
 
 defineOptions({ layout: UserLayout });
@@ -72,19 +73,27 @@ const applyPromo = () =>
         { preserveState: true, preserveScroll: true, only: ["promo", "promoError"] },
     );
 
-const detectLocation = () => {
-    if (!navigator.geolocation) {
-        alert("Browser tidak mendukung Geolocation.");
-        return;
+const defaultStoreCenter = computed(() => {
+    const lat = Number(props.store?.latitude);
+    const lng = Number(props.store?.longitude);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return { lat, lng };
     }
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            form.shipping_latitude = pos.coords.latitude;
-            form.shipping_longitude = pos.coords.longitude;
-        },
-        (err) => alert("Gagal mendeteksi lokasi GPS: " + err.message),
-        { enableHighAccuracy: true },
-    );
+    return { lat: -6.989720, lng: 110.421930 };
+});
+
+const onLocationSelected = (data) => {
+    form.shipping_latitude = data.latitude;
+    form.shipping_longitude = data.longitude;
+    if (data.formatted_address || data.street_name) {
+        form.shipping_address = data.formatted_address || data.street_name;
+    }
+    if (data.district && !form.shipping_district) {
+        form.shipping_district = data.district;
+    }
+    if (data.postal_code && !form.shipping_postal_code) {
+        form.shipping_postal_code = data.postal_code;
+    }
 };
 
 const submit = () =>
@@ -261,30 +270,39 @@ const input =
                     </div>
                 </div>
 
+                <!-- PETA INTERAKTIF OPENSTREETMAP & AMBIL NAMA JALAN GOOGLE -->
+                <div>
+                    <LocationPicker
+                        v-model:latitude="form.shipping_latitude"
+                        v-model:longitude="form.shipping_longitude"
+                        v-model:address="form.shipping_address"
+                        v-model:district="form.shipping_district"
+                        v-model:postalCode="form.shipping_postal_code"
+                        :default-center="defaultStoreCenter"
+                        label="Pin Titik Lokasi Penerima (OpenStreetMap)"
+                        @location-selected="onLocationSelected"
+                    />
+                    <p v-if="form.errors.shipping_latitude || form.errors.shipping_longitude" class="mt-1 text-xs text-rose-400 font-semibold">
+                        {{ form.errors.shipping_latitude || form.errors.shipping_longitude }}
+                    </p>
+                </div>
+
                 <!-- Detail Alamat Lengkap -->
                 <div>
-                    <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80">Detail Alamat Lengkap</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-[#f3f2e7]/80">
+                            Detail Alamat Lengkap (Nama Jalan, No. Rumah, Patokan)
+                        </label>
+                        <span class="text-[10px] text-[#f3f2e7]/50">
+                            Terisi otomatis dari pin lokasi & dapat diedit
+                        </span>
+                    </div>
                     <textarea
                         v-model="form.shipping_address"
                         rows="3"
                         :class="input"
                         placeholder="Nama jalan, nomor rumah, RT/RW, gang, blok, patokan lokasi..."
                     />
-                    <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <button
-                            type="button"
-                            class="flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 transition"
-                            @click="detectLocation"
-                        >
-                            📍 Pin Titik Koordinat GPS Saat Ini
-                        </button>
-                        <span
-                            v-if="form.shipping_latitude && form.shipping_longitude"
-                            class="font-semibold text-emerald-300"
-                        >
-                            ✓ Terdeteksi ({{ Number(form.shipping_latitude).toFixed(4) }}, {{ Number(form.shipping_longitude).toFixed(4) }})
-                        </span>
-                    </div>
                     <p v-if="form.errors.shipping_address" class="mt-1 text-xs text-rose-400 font-semibold">
                         {{ form.errors.shipping_address }}
                     </p>

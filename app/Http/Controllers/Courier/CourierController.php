@@ -264,12 +264,34 @@ class CourierController extends Controller
             'location_updated_at' => now(),
         ]);
 
-        DeliveryLocation::create([
-            'delivery_id' => $delivery->id,
-            'latitude' => $data['latitude'],
-            'longitude' => $data['longitude'],
-            'recorded_at' => now(),
-        ]);
+        // Rekam riwayat lokasi hanya jika kurir berpindah jarak signifikan (>= ~15 meter)
+        // atau jika belum pernah ada catatan titik / titik terakhir lebih dari 2 menit yang lalu.
+        $lastLocation = DeliveryLocation::where('delivery_id', $delivery->id)
+            ->latest('recorded_at')
+            ->first();
+
+        $shouldRecord = false;
+        if (! $lastLocation) {
+            $shouldRecord = true;
+        } else {
+            // Hitung estimasi jarak euclidean kasar (1 deg ~ 111,000 m)
+            $latDiff = ($data['latitude'] - $lastLocation->latitude) * 111000;
+            $lngDiff = ($data['longitude'] - $lastLocation->longitude) * 111000 * cos(deg2rad($data['latitude']));
+            $distanceMeters = sqrt(($latDiff * $latDiff) + ($lngDiff * $lngDiff));
+
+            if ($distanceMeters >= 15 || $lastLocation->recorded_at->diffInMinutes(now()) >= 2) {
+                $shouldRecord = true;
+            }
+        }
+
+        if ($shouldRecord) {
+            DeliveryLocation::create([
+                'delivery_id' => $delivery->id,
+                'latitude' => $data['latitude'],
+                'longitude' => $data['longitude'],
+                'recorded_at' => now(),
+            ]);
+        }
 
         return response()->json(['status' => 'ok']);
     }

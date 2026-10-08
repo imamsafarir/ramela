@@ -430,16 +430,17 @@ const updateMap = () => {
     }
     bounds.push([destCoords.lat, destCoords.lng]);
 
-    // 3. Marker Kurir & Posisi Realtime (POSISI BERBEDA & REALTIME)
+    // 3. Marker Kurir & Posisi Realtime
+    let actualCourierLat = cLat;
+    let actualCourierLng = cLng;
+
     if (hasCourier) {
-        // Cek jika koordinat kurir persis sama dengan toko (misal data bawaan seeder belum sinkron GPS fisik)
-        let actualCourierLat = cLat;
-        let actualCourierLng = cLng;
         const isIdenticalToStore = Math.abs(cLat - storeCoords.lat) < 0.0001 && Math.abs(cLng - storeCoords.lng) < 0.0001;
-        if (isIdenticalToStore) {
-            // Beri offset visual terpisah ~220 meter agar posisi kurir tidak menindih gambar toko
-            actualCourierLat = Number((cLat + 0.0015).toFixed(6));
-            actualCourierLng = Number((cLng + 0.0018).toFixed(6));
+        // Hanya beri offset visual tipis jika kurir masih waiting_pickup dan koordinat sama persis dengan toko,
+        // agar kedua marker bisa diklik secara terpisah tanpa tumpang tindih total.
+        if (isIdenticalToStore && !isEnRoute && !isDelivered) {
+            actualCourierLat = Number((cLat + 0.0007).toFixed(6));
+            actualCourierLng = Number((cLng + 0.0007).toFixed(6));
         }
 
         const courierPopupHtml = `
@@ -483,11 +484,17 @@ const updateMap = () => {
 
     if (historyPoints.length > 0) {
         historyPoints.forEach((pt) => bounds.push(pt));
-        renderHistoryLine(historyPoints, hasCourier ? [cLat, cLng] : null);
+        renderHistoryLine(historyPoints, hasCourier ? [actualCourierLat, actualCourierLng] : null);
     }
 
-    // 5. Garis Rute Jalan Raya (OSRM): Rute Awal adalah Toko Ramela ke Alamat Tujuan
-    fetchRoadRoute(storeCoords.lat, storeCoords.lng, destCoords.lat, destCoords.lng);
+    // 5. Garis Rute Jalan Raya (OSRM):
+    // Jika kurir sedang aktif mengantar (en_route), rute jalan dinavigasikan dari kurir langsung ke tujuan!
+    // Jika belum jalan (waiting_pickup) atau kurir belum ada, rute dari Toko Ramela ke Tujuan.
+    if (isEnRoute && hasCourier) {
+        fetchRoadRoute(actualCourierLat, actualCourierLng, destCoords.lat, destCoords.lng);
+    } else {
+        fetchRoadRoute(storeCoords.lat, storeCoords.lng, destCoords.lat, destCoords.lng);
+    }
 
     // Jika kurir sedang en_route dan memiliki posisi realtime yang berbeda, perbarui estimasi jarak/waktu dari posisi kurir ke tujuan
     if (isEnRoute && hasCourier) {

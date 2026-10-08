@@ -25,10 +25,18 @@ use Inertia\Inertia;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ContentController;
 
+use App\Http\Controllers\LocationController;
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/blog', [ContentController::class, 'blogs'])->name('blogs.index');
 Route::get('/blog/{slug}', [ContentController::class, 'blogDetail'])->name('blogs.show');
 Route::get('/faq', [ContentController::class, 'faqs'])->name('faqs.index');
+
+// Lokasi & Reverse Geocoding Nama Jalan (Google / OpenStreetMap)
+Route::prefix('api/location')->name('location.')->middleware('throttle:60,1')->group(function () {
+    Route::get('/reverse', [LocationController::class, 'reverse'])->name('reverse');
+    Route::get('/search', [LocationController::class, 'search'])->name('search');
+});
 
 // Webhook Midtrans: publik, CSRF dikecualikan di bootstrap/app.php, divalidasi lewat signature.
 Route::post('/midtrans/notification', MidtransWebhookController::class)

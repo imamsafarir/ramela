@@ -50,7 +50,7 @@ class CheckoutController extends Controller
         return Inertia::render('User/Checkout', [
             'promo' => $promo,
             'promoError' => $promoError,
-            'store' => $store->only('slug', 'name'),
+            'store' => $store->only('slug', 'name', 'latitude', 'longitude'),
             'shippingRates' => $shippingRates,
             'totalWeight' => $totalWeight,
             'items' => $items->map(fn($i) => [

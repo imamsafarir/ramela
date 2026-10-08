@@ -1,29 +1,76 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import AdminLayout from '../../Layouts/AdminLayout.vue';
 import { fmtDate, rupiah, statusClass } from '../../utils/format';
 
 defineOptions({ layout: AdminLayout });
 
-const props = defineProps({ orders: Object, stores: Array, statuses: Array, filters: Object });
+const props = defineProps({
+    orders: Object,
+    stores: Array,
+    statuses: Array,
+    filters: Object,
+    stats: {
+        type: Object,
+        default: () => ({
+            total_orders: 0,
+            today_orders: 0,
+            paid_orders: 0,
+            ready_orders: 0,
+            shipping_orders: 0,
+            completed_orders: 0,
+        }),
+    },
+});
 
 const f = reactive({
-    q: props.filters.q ?? '', store: props.filters.store ?? '', status: props.filters.status ?? '',
-    today: !!props.filters.today, sort: props.filters.sort ?? 'created_at', dir: props.filters.dir ?? 'desc',
+    q: props.filters.q ?? '',
+    store: props.filters.store ?? '',
+    status: props.filters.status ?? '',
+    delivery_type: props.filters.delivery_type ?? '',
+    today: !!props.filters.today,
+    sort: props.filters.sort ?? 'created_at',
+    dir: props.filters.dir ?? 'desc',
 });
 
 const apply = () => router.get('/admin/pesanan', {
-    q: f.q || undefined, store: f.store || undefined, status: f.status || undefined,
-    today: f.today ? 1 : undefined, sort: f.sort, dir: f.dir,
+    q: f.q || undefined,
+    store: f.store || undefined,
+    status: f.status || undefined,
+    delivery_type: f.delivery_type || undefined,
+    today: f.today ? 1 : undefined,
+    sort: f.sort,
+    dir: f.dir,
 }, { preserveState: true, replace: true });
+
+const resetFilters = () => {
+    f.q = '';
+    f.store = '';
+    f.status = '';
+    f.delivery_type = '';
+    f.today = false;
+    f.sort = 'created_at';
+    f.dir = 'desc';
+    apply();
+};
+
+const hasActiveFilters = computed(() => {
+    return Boolean(f.q || f.store || f.status || f.delivery_type || f.today || f.sort !== 'created_at');
+});
+
+const filterByStatus = (statusValue) => {
+    f.status = statusValue;
+    f.today = false;
+    apply();
+};
 
 const sortBy = (col) => {
     f.dir = f.sort === col && f.dir === 'desc' ? 'asc' : 'desc';
     f.sort = col;
     apply();
 };
-const arrow = (col) => (f.sort === col ? (f.dir === 'asc' ? ' ▲' : ' ▼') : '');
+const arrow = (col) => (f.sort === col ? (f.dir === 'asc' ? ' ▲' : ' ▼') : ' ↕');
 const input = 'rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 text-sm text-[#f3f2e7] focus:outline-none focus:border-[#0d685b] placeholder:text-[#f3f2e7]/40';
 </script>
 
@@ -31,28 +78,132 @@ const input = 'rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-3.5 py-2 te
     <Head title="Pesanan" />
     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-black text-[#f3f2e7] tracking-tight">Manajemen Pesanan</h1>
-            <p class="text-xs text-[#f3f2e7]/60">Pantau dan kelola seluruh transaksi pesanan RAMELA.</p>
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">📦</span>
+                <h1 class="text-2xl font-black text-[#f3f2e7] tracking-tight">Manajemen Pesanan</h1>
+            </div>
+            <p class="text-xs text-[#f3f2e7]/60">Pantau, proses, dan kelola seluruh transaksi pesanan RAMELA secara real-time.</p>
         </div>
     </div>
 
-    <form class="mt-5 flex flex-wrap items-center gap-2.5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-3 shadow-lg" @submit.prevent="apply">
-        <input v-model="f.q" placeholder="Invoice / username..." :class="[input, 'w-full sm:w-auto']" />
+    <!-- Quick KPI Stat Badges -->
+    <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <button
+            type="button"
+            @click="resetFilters"
+            class="text-left rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-3 shadow-md hover:border-[#0d685b] transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-[#f3f2e7]/60">Total Pesanan</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-[#f3f2e7] group-hover:text-emerald-400 transition">{{ stats.total_orders }}</span>
+                <span class="text-[10px] text-[#f3f2e7]/40">Semua</span>
+            </div>
+        </button>
+
+        <button
+            type="button"
+            @click="f.today = true; f.status = ''; apply();"
+            class="text-left rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-3 shadow-md hover:border-[#0d685b] transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-[#f3f2e7]/60">Hari Ini</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-emerald-400 group-hover:underline transition">{{ stats.today_orders }}</span>
+                <span class="text-[10px] text-emerald-400/60">Order</span>
+            </div>
+        </button>
+
+        <button
+            type="button"
+            @click="filterByStatus('paid')"
+            class="text-left rounded-2xl border border-indigo-500/30 bg-[#1c2a25] p-3 shadow-md hover:border-indigo-400 transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-indigo-300">Perlu Diproses</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-indigo-400 group-hover:scale-105 transition">{{ stats.paid_orders }}</span>
+                <span class="text-[10px] text-indigo-300/60">Toko</span>
+            </div>
+        </button>
+
+        <button
+            type="button"
+            @click="filterByStatus('ready_to_ship')"
+            class="text-left rounded-2xl border border-amber-500/30 bg-[#1c2a25] p-3 shadow-md hover:border-amber-400 transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-amber-300">Siap Kirim / Ambil</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-amber-400 group-hover:scale-105 transition">{{ stats.ready_orders }}</span>
+                <span class="text-[10px] text-amber-300/60">Siap</span>
+            </div>
+        </button>
+
+        <button
+            type="button"
+            @click="filterByStatus('shipping')"
+            class="text-left rounded-2xl border border-teal-500/30 bg-[#1c2a25] p-3 shadow-md hover:border-teal-400 transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-teal-300">Sedang Diantar</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-teal-400 group-hover:scale-105 transition">{{ stats.shipping_orders }}</span>
+                <span class="text-[10px] text-teal-300/60">En Route</span>
+            </div>
+        </button>
+
+        <button
+            type="button"
+            @click="filterByStatus('completed')"
+            class="text-left rounded-2xl border border-emerald-500/30 bg-[#1c2a25] p-3 shadow-md hover:border-emerald-400 transition cursor-pointer group"
+        >
+            <div class="text-[11px] font-medium text-emerald-300">Selesai</div>
+            <div class="mt-1 flex items-baseline justify-between">
+                <span class="text-xl font-black text-emerald-400 group-hover:scale-105 transition">{{ stats.completed_orders }}</span>
+                <span class="text-[10px] text-emerald-300/60">Berhasil</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- Filter Control Bar -->
+    <form class="mt-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] p-3.5 shadow-lg" @submit.prevent="apply">
+        <div class="relative flex-1 min-w-[200px]">
+            <input v-model="f.q" placeholder="Cari invoice / username..." :class="[input, 'w-full pr-7']" />
+            <button
+                v-if="f.q"
+                type="button"
+                @click="f.q = ''; apply();"
+                class="absolute right-2.5 top-2.5 text-xs text-[#f3f2e7]/50 hover:text-white"
+            >
+                ✕
+            </button>
+        </div>
         <select v-model="f.store" :class="[input, 'w-full sm:w-auto']" @change="apply">
-            <option value="">Semua toko</option>
+            <option value="">Semua Toko</option>
             <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
         <select v-model="f.status" :class="[input, 'w-full sm:w-auto']" @change="apply">
-            <option value="">Semua status</option>
+            <option value="">Semua Status Pesanan</option>
             <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
-        <label class="flex items-center gap-2 text-xs font-semibold text-[#f3f2e7]/80 px-2 cursor-pointer">
+        <select v-model="f.delivery_type" :class="[input, 'w-full sm:w-auto']" @change="apply">
+            <option value="">Semua Metode Kirim</option>
+            <option value="courier">🚚 Kurir Ekspedisi</option>
+            <option value="pickup">🏪 Ambil Sendiri (Pickup)</option>
+        </select>
+        <label class="flex items-center gap-2 text-xs font-semibold text-[#f3f2e7]/80 px-2 cursor-pointer select-none">
             <input v-model="f.today" type="checkbox" class="rounded accent-[#0d685b]" @change="apply" />
             Hari ini
         </label>
-        <button class="rounded-xl bg-[#0d685b] px-4 py-2 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/90 transition">
-            Filter Data
-        </button>
+        <div class="flex items-center gap-2 ml-auto">
+            <button
+                v-if="hasActiveFilters"
+                type="button"
+                @click="resetFilters"
+                class="rounded-xl border border-rose-500/30 bg-rose-950/20 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-900/30 transition cursor-pointer"
+            >
+                Reset Filter
+            </button>
+            <button type="submit" class="rounded-xl bg-[#0d685b] px-4 py-2 text-xs font-bold text-[#f3f2e7] shadow-sm hover:bg-[#0d685b]/90 transition cursor-pointer">
+                🔍 Filter Data
+            </button>
+        </div>
     </form>
 
     <div class="mt-4 overflow-x-auto rounded-2xl border border-[#0d685b]/30 bg-[#1c2a25] shadow-lg">

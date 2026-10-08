@@ -34,10 +34,16 @@ class SettingsController extends Controller
             'icon' => $s->icon,
         ]);
 
+        $googleKey = $settings->get('google.maps_api_key') ?: config('services.google.maps_key');
+
         return Inertia::render('Admin/Settings', [
             'midtrans' => [
                 'is_production' => $settings->bool('midtrans.is_production'),
                 'secrets' => $secretState,
+            ],
+            'google' => [
+                'has_key' => !empty($googleKey),
+                'key_hint' => $googleKey ? '••••'.substr($googleKey, -4) : null,
             ],
             'features' => [
                 'blog' => $settings->bool('feature.blog', true),
@@ -58,6 +64,7 @@ class SettingsController extends Controller
             'merchant_id' => ['nullable', 'string', 'max:100'],
             'client_key' => ['nullable', 'string', 'max:200'],
             'server_key' => ['nullable', 'string', 'max:200'],
+            'google_maps_api_key' => ['nullable', 'string', 'max:200'],
             'feature_blog' => ['required', 'boolean'],
             'feature_faq' => ['required', 'boolean'],
             'stores' => ['nullable', 'array'],
@@ -70,6 +77,10 @@ class SettingsController extends Controller
         $settings->set('midtrans.is_production', $data['is_production'] ? 'true' : 'false');
         $settings->set('feature.blog', $data['feature_blog'] ? 'true' : 'false');
         $settings->set('feature.faq', $data['feature_faq'] ? 'true' : 'false');
+
+        if (filled($data['google_maps_api_key'] ?? null)) {
+            $settings->set('google.maps_api_key', trim($data['google_maps_api_key']), encrypted: true);
+        }
 
         // Kolom rahasia yang dikosongkan = tidak diubah (nilai lama dipertahankan).
         foreach (self::SECRETS as $name) {
