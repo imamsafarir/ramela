@@ -30,7 +30,7 @@ const props = defineProps({
     },
     label: {
         type: String,
-        default: "Titik Lokasi Pengiriman (OpenStreetMap)",
+        default: "Titik Lokasi Pengiriman",
     },
 });
 
@@ -207,55 +207,75 @@ const fetchStreetName = async (lat, lng) => {
 };
 
 // Ambil Lokasi GPS Perangkat Pengguna
-const detectGps = () => {
-    if (!navigator.geolocation) {
-        geocodeError.value = "Browser perangkat Anda tidak mendukung fitur Geolocation GPS.";
-        return;
-    }
-
+const detectGps = async () => {
     isGpsLoading.value = true;
     geocodeError.value = "";
 
-    const onSuccess = (pos) => {
-        const lat = Number(Number(pos.coords.latitude).toFixed(6));
-        const lng = Number(Number(pos.coords.longitude).toFixed(6));
+    const onCoordsFound = (lat, lng) => {
         isGpsLoading.value = false;
-
         if (map) {
             map.setView([lat, lng], 17);
         }
         setMarkerPosition(lat, lng, true);
     };
 
-    const handleGpsError = (err) => {
-        let msg = "Gagal mendeteksi lokasi GPS.";
-        if (err.code === 1) msg = "Izin akses lokasi ditolak. Silakan izinkan browser mengakses GPS perangkat.";
-        if (err.code === 2) msg = "Posisi GPS tidak ditemukan. Pastikan layanan GPS di perangkat aktif.";
-        if (err.code === 3) msg = "Waktu pencarian GPS habis. Silakan klik peta atau gunakan pencarian alamat.";
-        geocodeError.value = msg;
-    };
-
-    const onError = (err) => {
-        // Jika high accuracy gagal/timeout, coba fallback mode standar
-        if (err.code === 3) {
-            navigator.geolocation.getCurrentPosition(
-                onSuccess,
-                (err2) => {
-                    isGpsLoading.value = false;
-                    handleGpsError(err2);
-                },
-                { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-            );
-            return;
+    const tryIpFallback = async (reasonMsg = "") => {
+        try {
+            const res = await axios.get("/api/location/detect");
+            if (res.data && res.data.latitude && res.data.longitude) {
+                isGpsLoading.value = false;
+                const lat = Number(res.data.latitude);
+                const lng = Number(res.data.longitude);
+                if (map) {
+                    map.setView([lat, lng], 17);
+                }
+                setMarkerPosition(lat, lng, false);
+                applyLocationData(res.data);
+                if (reasonMsg) {
+                    geocodeError.value = `${reasonMsg} Menggunakan perkiraan wilayah.`;
+                }
+                return;
+            }
+        } catch (e) {
+            console.warn("Gagal deteksi lokasi IP fallback:", e);
         }
+
         isGpsLoading.value = false;
-        handleGpsError(err);
+        const def = props.defaultCenter || { lat: -6.989720, lng: 110.421930 };
+        onCoordsFound(def.lat, def.lng);
+        if (reasonMsg) {
+            geocodeError.value = reasonMsg;
+        }
     };
 
+    // Jika browser tidak mendukung Geolocation
+    if (!navigator.geolocation) {
+        await tryIpFallback("Browser tidak mendukung GPS.");
+        return;
+    }
+
+    // Jika diakses lewat HTTP di host non-localhost, browser memblokir Geolocation API
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (!window.isSecureContext && !isLocalhost) {
+        await tryIpFallback("Akses HTTP membatasi GPS browser.");
+        return;
+    }
+
+    // Coba deteksi GPS perangkat (opsi standar cepat tanpa satelit timeout)
     navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        onError,
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        (pos) => {
+            const lat = Number(Number(pos.coords.latitude).toFixed(6));
+            const lng = Number(Number(pos.coords.longitude).toFixed(6));
+            onCoordsFound(lat, lng);
+        },
+        async (err) => {
+            let reason = "GPS tidak aktif / izin ditolak.";
+            if (err.code === 1) reason = "Izin lokasi belum diberikan.";
+            if (err.code === 2) reason = "Sinyal GPS tidak ditemukan.";
+            if (err.code === 3) reason = "Pencarian GPS melebihi batas waktu.";
+            await tryIpFallback(reason);
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
     );
 };
 
@@ -374,7 +394,7 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
                 <p class="text-[11px] text-[#f3f2e7]/60">
-                    Cari jalan atau klik GPS untuk mengisi otomatis Kecamatan, Kelurahan, Kode Pos & Alamat.
+                    Pilih titik di peta, gunakan GPS, atau cari alamat di bawah.
                 </p>
             </div>
 
@@ -388,7 +408,7 @@ onBeforeUnmount(() => {
             >
                 <span v-if="isGpsLoading" class="animate-spin text-xs">⏳</span>
                 <span v-else>📍</span>
-                <span>{{ isGpsLoading ? 'Mencari GPS...' : 'Gunakan GPS Saya' }}</span>
+                <span>{{ isGpsLoading ? 'Mencari Lokasi...' : 'Gunakan GPS Saya' }}</span>
             </button>
         </div>
 
@@ -418,7 +438,7 @@ onBeforeUnmount(() => {
                     v-model="searchQuery"
                     type="text"
                     class="w-full rounded-xl border border-[#0d685b]/40 bg-[#1c2a25] pl-8 pr-16 py-2 text-xs text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    placeholder="Ketik nama jalan, perumahan, kelurahan... (Tekan Enter)"
+                    placeholder="Cari jalan atau nama lokasi... (Tekan Enter)"
                     @input="handleSearchInput"
                     @keydown.enter.prevent="searchImmediately"
                     @focus="showSearchResults = searchResults.length > 0"
@@ -523,7 +543,7 @@ onBeforeUnmount(() => {
             v-else
             class="rounded-xl border border-[#0d685b]/30 bg-[#1c2a25]/50 p-2.5 text-center text-[11px] text-[#f3f2e7]/60"
         >
-            ⚠️ Belum ada titik koordinat yang dipilih. Klik tombol <strong>"Gunakan GPS Saya"</strong> atau cari nama jalan di kolom pencarian.
+            Pilih titik lokasi di peta, gunakan GPS, atau ketik pencarian alamat.
         </div>
     </div>
 </template>

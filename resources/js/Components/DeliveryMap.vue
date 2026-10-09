@@ -517,17 +517,40 @@ const updateMap = () => {
     }
 
     // Fit view area peta agar seluruh rute dan titik terlihat
+    fitAllBounds();
+};
+
+const fitAllBounds = () => {
+    if (!map) return;
+    map.invalidateSize();
+
+    const storeCoords = getEffectiveStoreCoords();
+    const destCoords = getEffectiveDestCoords();
+    const cLat = Number(props.courierLat);
+    const cLng = Number(props.courierLng);
+    const hasCourier = !isNaN(cLat) && !isNaN(cLng) && cLat !== 0;
+
+    const bounds = [];
+    bounds.push([storeCoords.lat, storeCoords.lng]);
+    bounds.push([destCoords.lat, destCoords.lng]);
+
+    if (hasCourier) {
+        bounds.push([cLat, cLng]);
+    }
+
+    if (props.routeHistory && props.routeHistory.length) {
+        props.routeHistory.forEach((pt) => bounds.push(pt));
+    }
+
     if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16, animate: true });
     } else if (bounds.length === 1) {
-        map.setView(bounds[0], 15);
+        map.setView(bounds[0], 15, { animate: true });
     }
 };
 
 const centerMap = () => {
-    if (!map) return;
-    map.invalidateSize();
-    updateMap();
+    fitAllBounds();
 };
 
 const openGoogleMaps = () => {
@@ -644,12 +667,12 @@ onUnmounted(() => {
                 <!-- Tombol Pusatkan Peta -->
                 <button
                     type="button"
-                    class="inline-flex items-center gap-1 rounded-lg border border-[#0d685b]/40 bg-[#1c2a25] px-2 py-1 text-[11px] font-bold text-[#f3f2e7] hover:bg-[#131d1a] transition cursor-pointer"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-[#0d685b]/40 bg-[#1c2a25] px-2.5 py-1 text-[11px] font-bold text-[#f3f2e7] hover:bg-[#131d1a] active:scale-95 transition cursor-pointer shadow-xs"
                     title="Pusatkan peta ke seluruh rute"
                     @click="centerMap"
                 >
                     <span>🎯</span>
-                    <span class="hidden sm:inline">Pusatkan</span>
+                    <span>Pusatkan</span>
                 </button>
 
                 <!-- Tombol Navigasi Google Maps -->
@@ -665,8 +688,21 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <!-- CONTAINER LEAFLET MAP -->
-        <div ref="mapContainer" class="h-80 sm:h-96 w-full z-0"></div>
+        <!-- CONTAINER LEAFLET MAP & FLOATING CONTROLS -->
+        <div class="relative w-full">
+            <div ref="mapContainer" class="h-80 sm:h-96 w-full z-0"></div>
+
+            <!-- Tombol Floating Pusatkan Peta Langsung di Atas Peta -->
+            <button
+                type="button"
+                class="absolute bottom-3 right-3 z-[400] inline-flex items-center gap-1.5 rounded-xl border border-[#0d685b]/60 bg-[#131d1a]/95 backdrop-blur px-3 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-xl hover:bg-[#1c2a25] active:scale-95 transition cursor-pointer"
+                title="Pusatkan tampilan peta ke seluruh rute"
+                @click="centerMap"
+            >
+                <span>🎯</span>
+                <span>Pusatkan Peta</span>
+            </button>
+        </div>
 
         <!-- FOOTER LEGENDA GARIS RUTE JALAN -->
         <div

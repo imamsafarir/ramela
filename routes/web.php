@@ -36,6 +36,7 @@ Route::get('/faq', [ContentController::class, 'faqs'])->name('faqs.index');
 Route::prefix('api/location')->name('location.')->middleware('throttle:60,1')->group(function () {
     Route::get('/reverse', [LocationController::class, 'reverse'])->name('reverse');
     Route::get('/search', [LocationController::class, 'search'])->name('search');
+    Route::get('/detect', [LocationController::class, 'detect'])->name('detect');
 });
 
 // Webhook Midtrans: publik, CSRF dikecualikan di bootstrap/app.php, divalidasi lewat signature.

@@ -39,5 +39,15 @@ class LocationController extends Controller
             'results' => $results,
         ]);
     }
+
+    /**
+     * Deteksi lokasi berdasarkan IP klien (cadangan saat GPS browser tidak aktif / ditolak).
+     */
+    public function detect(Request $request, GeocodingService $geocoding): JsonResponse
+    {
+        $result = $geocoding->detectFromIp($request->ip());
+
+        return response()->json($result);
+    }
 }
 

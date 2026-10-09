@@ -87,9 +87,8 @@ const onLocationSelected = (data) => {
         form.shipping_latitude = Number(data.latitude);
         form.shipping_longitude = Number(data.longitude);
     }
-    if (data.formatted_address || data.street_name || data.address) {
-        form.shipping_address = data.formatted_address || data.address || data.street_name;
-    }
+    // Sesuai permintaan: Hanya Kecamatan/Kelurahan dan Kodepos yang otomatis terisi.
+    // Detail Alamat Lengkap diisi manual oleh pemesan.
     if (data.district) {
         form.shipping_district = data.district;
     }
@@ -263,11 +262,10 @@ const input =
                     <LocationPicker
                         v-model:latitude="form.shipping_latitude"
                         v-model:longitude="form.shipping_longitude"
-                        v-model:address="form.shipping_address"
                         v-model:district="form.shipping_district"
                         v-model:postalCode="form.shipping_postal_code"
                         :default-center="defaultStoreCenter"
-                        label="Titik Lokasi Pengiriman & Cari Alamat"
+                        label="Titik Lokasi Pengiriman"
                         @location-selected="onLocationSelected"
                     />
                     <p v-if="form.errors.shipping_latitude || form.errors.shipping_longitude" class="mt-1 text-xs text-rose-400 font-semibold">
@@ -283,7 +281,7 @@ const input =
                                 Kecamatan / Kelurahan (Kec/Kel)
                             </label>
                             <span v-if="form.shipping_district" class="text-[10px] text-emerald-400 font-semibold">
-                                ✨ Terisi otomatis
+                                Terisi otomatis
                             </span>
                         </div>
                         <input
@@ -302,7 +300,7 @@ const input =
                                 Kode Pos
                             </label>
                             <span v-if="form.shipping_postal_code" class="text-[10px] text-emerald-400 font-semibold">
-                                ✨ Terisi otomatis
+                                Terisi otomatis
                             </span>
                         </div>
                         <input
@@ -316,19 +314,11 @@ const input =
                     </div>
                 </div>
 
-                <!-- Detail Alamat Lengkap -->
+                <!-- Detail Alamat Lengkap (Diisi Manual oleh User) -->
                 <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label class="block text-xs font-bold text-[#f3f2e7]/80">
-                            Detail Alamat Lengkap (Nama Jalan, No. Rumah, Patokan)
-                        </label>
-                        <span v-if="form.shipping_address" class="text-[10px] text-emerald-400 font-semibold">
-                            ✨ Terisi otomatis & dapat disesuaikan
-                        </span>
-                        <span v-else class="text-[10px] text-[#f3f2e7]/50">
-                            Terisi otomatis dari pin lokasi & dapat diedit
-                        </span>
-                    </div>
+                    <label class="block text-xs font-bold text-[#f3f2e7]/80 mb-1.5">
+                        Detail Alamat Lengkap (Nama Jalan, No. Rumah, Patokan)
+                    </label>
                     <textarea
                         v-model="form.shipping_address"
                         rows="3"

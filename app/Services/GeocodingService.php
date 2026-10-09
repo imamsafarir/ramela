@@ -261,54 +261,174 @@ class GeocodingService
     }
 
     /**
-     * Fallback: Ambil nama jalan dari OpenStreetMap Nominatim
+     * Fallback: Ambil nama jalan dari OpenStreetMap Nominatim, diperkuat BigDataCloud
      */
     protected function reverseFromNominatim(float $lat, float $lng): array
     {
         $cacheKey = 'geocode.osm.' . round($lat, 5) . '.' . round($lng, 5);
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if ($cached && ($cached['source'] ?? '') !== 'fallback' && !empty($cached['district'])) {
+            return $cached;
+        }
 
-        return \Illuminate\Support\Facades\Cache::remember($cacheKey, 86400, function () use ($lat, $lng) {
-            try {
-                $response = Http::timeout(6)
-                    ->withHeaders([
-                        'User-Agent' => 'RAMELA-E-Commerce/1.0 (info@ramela.local)',
-                    ])
-                    ->get('https://nominatim.openstreetmap.org/reverse', [
-                        'lat' => $lat,
-                        'lon' => $lng,
-                        'format' => 'jsonv2',
-                        'zoom' => 18,
-                        'addressdetails' => 1,
-                        'accept-language' => 'id',
-                    ]);
+        try {
+            $response = Http::timeout(6)
+                ->withHeaders([
+                    'User-Agent' => 'RAMELA-E-Commerce/1.0 (info@ramela.local)',
+                ])
+                ->get('https://nominatim.openstreetmap.org/reverse', [
+                    'lat' => $lat,
+                    'lon' => $lng,
+                    'format' => 'jsonv2',
+                    'zoom' => 18,
+                    'addressdetails' => 1,
+                    'accept-language' => 'id',
+                ]);
 
-                if ($response->successful()) {
-                    $data = $response->json();
-                    return $this->parseNominatimAddress(
-                        $data['address'] ?? [],
-                        $data['display_name'] ?? '',
-                        $lat,
-                        $lng
-                    );
+            if ($response->successful()) {
+                $data = $response->json();
+                $parsed = $this->parseNominatimAddress(
+                    $data['address'] ?? [],
+                    $data['display_name'] ?? '',
+                    $lat,
+                    $lng
+                );
+
+                if (!empty($parsed['district'])) {
+                    \Illuminate\Support\Facades\Cache::put($cacheKey, $parsed, 86400);
+                    return $parsed;
                 }
-            } catch (\Throwable $e) {
-                Log::warning('Nominatim reverse exception: ' . $e->getMessage());
             }
+        } catch (\Throwable $e) {
+            Log::warning('Nominatim reverse exception: ' . $e->getMessage());
+        }
 
-            return [
-                'success' => true,
-                'source' => 'fallback',
-                'street_name' => "Koordinat {$lat}, {$lng}",
-                'formatted_address' => "Titik Koordinat: {$lat}, {$lng}",
-                'district' => '',
-                'sublocality' => '',
-                'city' => '',
-                'province' => '',
-                'postal_code' => '',
+        // Cadangan kedua jika Nominatim gagal / tidak memiliki nama kecamatan
+        $bdcResult = $this->reverseFromBigDataCloud($lat, $lng);
+        if ($bdcResult !== null) {
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $bdcResult, 86400);
+            return $bdcResult;
+        }
+
+        return [
+            'success' => true,
+            'source' => 'fallback',
+            'street_name' => "Koordinat {$lat}, {$lng}",
+            'formatted_address' => "Titik Koordinat: {$lat}, {$lng}",
+            'district' => '',
+            'sublocality' => '',
+            'city' => '',
+            'province' => '',
+            'postal_code' => '',
+            'latitude' => $lat,
+            'longitude' => $lng,
+        ];
+    }
+
+    /**
+     * Fallback info wilayah & administrasi via BigDataCloud Client API (gratis, tanpa API key)
+     */
+    protected function reverseFromBigDataCloud(float $lat, float $lng): ?array
+    {
+        try {
+            $response = Http::timeout(5)->get('https://api.bigdatacloud.net/data/reverse-geocode-client', [
                 'latitude' => $lat,
                 'longitude' => $lng,
-            ];
-        });
+                'localityLanguage' => 'id',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $admin = $data['localityInfo']['administrative'] ?? [];
+
+                $district = null;
+                $city = $data['city'] ?? null;
+                $province = $data['principalSubdivision'] ?? null;
+                $sublocality = $data['locality'] ?? null;
+                $postcode = $data['postcode'] ?? '';
+
+                foreach ($admin as $a) {
+                    $lvl = (int) ($a['adminLevel'] ?? 0);
+                    if ($lvl === 4 && empty($province)) {
+                        $province = $a['name'];
+                    } elseif ($lvl === 5 && empty($city)) {
+                        $city = $a['name'];
+                    } elseif ($lvl === 6 && empty($district)) {
+                        $district = $a['name'];
+                    }
+                }
+
+                $districtFormatted = '';
+                if ($district && $sublocality && $sublocality !== $city) {
+                    $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                    $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+                    $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
+                } elseif ($district) {
+                    $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+                    $districtFormatted = "Kec. {$dName}";
+                } elseif ($sublocality) {
+                    $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+                    $districtFormatted = "Kel. {$sName}";
+                }
+
+                $streetName = $districtFormatted ?: "Titik ({$lat}, {$lng})";
+                $formatted = implode(', ', array_filter([$districtFormatted, $city, $province, $postcode]));
+
+                return [
+                    'success' => true,
+                    'source' => 'bdc',
+                    'street_name' => $streetName,
+                    'formatted_address' => $formatted ?: "Koordinat {$lat}, {$lng}",
+                    'district' => $districtFormatted,
+                    'sublocality' => $sublocality ?? '',
+                    'city' => $city ?? '',
+                    'province' => $province ?? '',
+                    'postal_code' => $postcode,
+                    'latitude' => $lat,
+                    'longitude' => $lng,
+                ];
+            }
+        } catch (\Throwable $e) {
+            Log::warning('BigDataCloud reverse exception: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Deteksi lokasi berdasarkan IP (fallback saat GPS perangkat tidak aktif / ditolak).
+     */
+    public function detectFromIp(?string $ip): array
+    {
+        // Koordinat default Kota Semarang (-6.989720, 110.421930) jika IP lokal / loopback
+        $defaultLat = -6.989720;
+        $defaultLng = 110.421930;
+
+        if (empty($ip) || in_array($ip, ['127.0.0.1', '::1']) || str_starts_with($ip, '192.168.') || str_starts_with($ip, '10.') || str_starts_with($ip, '172.')) {
+            $res = $this->reverse($defaultLat, $defaultLng);
+            $res['is_ip_fallback'] = true;
+            return $res;
+        }
+
+        try {
+            $resp = Http::timeout(4)->get("http://ip-api.com/json/{$ip}", [
+                'fields' => 'status,lat,lon,city,regionName,zip',
+            ]);
+
+            if ($resp->successful() && ($resp->json('status') === 'success')) {
+                $lat = (float) $resp->json('lat');
+                $lng = (float) $resp->json('lon');
+                $res = $this->reverse($lat, $lng);
+                $res['is_ip_fallback'] = true;
+                return $res;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('IP Geolocation error: ' . $e->getMessage());
+        }
+
+        $res = $this->reverse($defaultLat, $defaultLng);
+        $res['is_ip_fallback'] = true;
+        return $res;
     }
 
     /**
