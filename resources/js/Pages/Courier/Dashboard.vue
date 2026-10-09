@@ -471,19 +471,11 @@ onUnmounted(() => {
                 <template v-if="activeDelivery.status === 'en_route'">
                     <button
                         type="button"
-                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500 transition active:scale-95"
-                        @click="openUploadModal('dropoff', 'camera')"
+                        class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-500 transition active:scale-95 cursor-pointer"
+                        @click="openUploadModal('dropoff')"
                     >
                         <span>✅</span>
-                        <span>Selesaikan (Kamera)</span>
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-2 rounded-xl border border-[#0d685b]/40 bg-[#131d1a] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#f3f2e7] hover:border-[#0d685b] hover:bg-[#1c2a25] transition active:scale-95"
-                        @click="openUploadModal('dropoff', 'file')"
-                    >
-                        <span>📁</span>
-                        <span>Unggah Bukti (Galeri)</span>
+                        <span>Selesaikan</span>
                     </button>
                 </template>
             </div>
@@ -583,59 +575,6 @@ onUnmounted(() => {
                         </li>
                     </ul>
                 </div>
-
-                <div v-if="activeDelivery.status === 'en_route'" class="rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-xs text-emerald-200 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 font-bold text-emerald-300">
-                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                            <span>📍 GPS Pelacakan Aktif Realtime</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                :disabled="isRefreshingGps"
-                                class="inline-flex items-center gap-1 rounded-md bg-emerald-700/60 hover:bg-emerald-600/70 px-2 py-0.5 text-[10px] font-bold text-emerald-100 transition active:scale-95 disabled:opacity-50"
-                                @click="refreshGpsLocation"
-                            >
-                                <span :class="{ 'animate-spin': isRefreshingGps }">🔄</span>
-                                <span>Perbarui GPS</span>
-                            </button>
-                            <span v-if="displayCoords.lat && displayCoords.lng" class="text-[10px] font-mono text-emerald-300/80">
-                                {{ Number(displayCoords.lat).toFixed(4) }}, {{ Number(displayCoords.lng).toFixed(4) }}
-                            </span>
-                        </div>
-                    </div>
-                    <p class="text-emerald-200/80 leading-relaxed text-[11px]">
-                        Koordinat GPS fisik Anda disinkronkan berkala ke server setiap 5 detik agar pembeli & admin dapat melihat garis rute jalan raya dan posisi kurir secara akurat.
-                    </p>
-                    <div class="pt-1 flex flex-wrap items-center gap-1.5 border-t border-emerald-500/20">
-                        <span class="text-[10px] text-emerald-300/70">Kalibrasi Rute:</span>
-                        <button
-                            type="button"
-                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
-                            title="Set posisi di awal rute toko"
-                            @click="calibrateToRoute(0.2)"
-                        >
-                            🏪 Awal (20%)
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
-                            title="Set posisi di pertengahan rute jalan"
-                            @click="calibrateToRoute(0.5)"
-                        >
-                            🛵 Tengah (50%)
-                        </button>
-                        <button
-                            type="button"
-                            class="rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 px-2 py-1 text-[10px] font-bold text-emerald-100 transition active:scale-95 border border-emerald-600/40"
-                            title="Set posisi mendekati alamat tujuan"
-                            @click="calibrateToRoute(0.85)"
-                        >
-                            📍 Dekat Tujuan (85%)
-                        </button>
-                    </div>
-                </div>
             </div>
 
             <!-- Peta Rute & Titik Kurir -->
@@ -653,6 +592,7 @@ onUnmounted(() => {
                     :recipient-name="activeDelivery.transaction.recipient_name"
                     :delivery-status="activeDelivery.status"
                     :route-history="activeDelivery.locations || []"
+                    @refresh="router.reload({ preserveScroll: true })"
                 />
             </div>
         </div>
@@ -846,8 +786,8 @@ onUnmounted(() => {
                     </button>
                 </div>
                 <p class="mt-1 text-xs text-[#f3f2e7]/70">
-                    {{ cameraAction === 'pickup' 
-                        ? 'Unggah foto barang pesanan di toko sebelum memulai perjalanan pengantaran.' 
+                    {{ cameraAction === 'pickup'
+                        ? 'Unggah foto barang pesanan di toko sebelum memulai perjalanan pengantaran.'
                         : 'Unggah foto bukti barang telah diterima oleh pelanggan di lokasi tujuan.' }}
                 </p>
             </div>

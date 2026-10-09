@@ -315,6 +315,7 @@ const getGoogleMapsDirUrl = (destLat, destLng, originLat = null, originLng = nul
                 :recipient-name="order.recipient_name"
                 :delivery-status="order.delivery?.status"
                 :route-history="order.delivery?.locations || []"
+                @refresh="router.reload({ preserveScroll: true })"
             />
         </div>
 

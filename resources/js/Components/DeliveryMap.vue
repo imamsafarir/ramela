@@ -82,6 +82,9 @@ const getEffectiveDestCoords = () => {
     };
 };
 
+const emit = defineEmits(["refresh"]);
+const isRefreshing = ref(false);
+
 // Leaflet Custom Marker Icons
 const createStoreIcon = (name) =>
     L.divIcon({
@@ -93,17 +96,20 @@ const createStoreIcon = (name) =>
                 <span>🏪</span>
                 <span>${name || 'Toko RAMELA'}</span>
             </div>
-            <!-- Pin Lingkaran Gambar Toko Ramela -->
-            <div style="position: relative; width: 50px; height: 50px; border-radius: 50%; background: #131d1a; border: 3px solid #149683; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 0 12px rgba(20, 150, 131, 0.6);">
-                <img src="/images/store-ramela.svg" alt="Toko Ramela" style="width: 100%; height: 100%; object-fit: cover;" />
+            <!-- Pin Lingkaran Toko Ramela -->
+            <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <div style="position: absolute; width: 40px; height: 40px; background: rgba(13, 104, 91, 0.35); border-radius: 50%;"></div>
+                <div style="background-color: #0d685b; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; font-size: 16px; z-index: 10; box-shadow: 0 0 10px rgba(13, 104, 91, 0.6);">
+                    🏪
+                </div>
             </div>
             <!-- Segitiga Pin Pointer Bawah -->
-            <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid #149683; margin-top: -1px;"></div>
+            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #0d685b; margin-top: -1px;"></div>
         </div>
     `,
-        iconSize: [120, 84],
-        iconAnchor: [60, 84],
-        popupAnchor: [0, -84],
+        iconSize: [120, 72],
+        iconAnchor: [60, 72],
+        popupAnchor: [0, -72],
     });
 
 const createCourierIcon = () =>
@@ -391,15 +397,16 @@ const updateMap = () => {
 
     const bounds = [];
 
-    // 1. Marker Toko Asal (TITIK AWAL RUTE: Selalu ada dengan Gambar Toko Ramela!)
+    // 1. Marker Toko Asal (Titik Awal Rute)
     const storePopupHtml = `
-        <div style="min-width: 190px; font-family: sans-serif;">
-            <img src="/images/store-ramela.svg" style="width: 100%; height: 85px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1.5px solid #0d685b;" alt="Toko Ramela" />
-            <b style="font-size: 13px; color: #0f172a; display: block;">🏪 ${props.storeName || "Toko RAMELA"}</b>
-            <span style="font-size: 11px; color: #475569; display: block; margin-top: 2px;">${props.storeAddress || "Pusat Pengiriman Toko"}</span>
-            <div style="margin-top: 6px; padding: 3px 8px; background: #e6f4f1; color: #0d685b; font-size: 10px; font-weight: 800; border-radius: 6px; display: inline-block;">
-                🚩 Titik Awal Rute Pengiriman
-            </div>
+        <div style="min-width: 180px; font-family: sans-serif; padding: 2px 0;">
+            <b style="font-size: 13px; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+                <span>🏪</span>
+                <span>${props.storeName || "Toko RAMELA"}</span>
+            </b>
+            <span style="font-size: 11px; color: #475569; display: block; margin-top: 4px; line-height: 1.4;">
+                ${props.storeAddress || "Pusat Pengiriman Toko"}
+            </span>
         </div>
     `;
 
@@ -553,6 +560,19 @@ const centerMap = () => {
     fitAllBounds();
 };
 
+const refreshMap = () => {
+    isRefreshing.value = true;
+    lastRouteRequest = { fromLat: 0, fromLng: 0, toLat: 0, toLng: 0, time: 0 };
+    if (map) {
+        map.invalidateSize();
+    }
+    updateMap();
+    emit("refresh");
+    setTimeout(() => {
+        isRefreshing.value = false;
+    }, 700);
+};
+
 const openGoogleMaps = () => {
     const storeCoords = getEffectiveStoreCoords();
     const destCoords = getEffectiveDestCoords();
@@ -664,6 +684,18 @@ onUnmounted(() => {
                     Menghitung rute & estimasi...
                 </span>
 
+                <!-- Tombol Perbarui Peta -->
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-[#0d685b]/40 bg-[#1c2a25] px-2.5 py-1 text-[11px] font-bold text-[#f3f2e7] hover:bg-[#131d1a] active:scale-95 transition cursor-pointer shadow-xs"
+                    title="Perbarui peta & rute"
+                    :disabled="isRefreshing"
+                    @click="refreshMap"
+                >
+                    <span :class="{ 'animate-spin': isRefreshing }">🔄</span>
+                    <span>Perbarui</span>
+                </button>
+
                 <!-- Tombol Pusatkan Peta -->
                 <button
                     type="button"
@@ -692,16 +724,28 @@ onUnmounted(() => {
         <div class="relative w-full">
             <div ref="mapContainer" class="h-80 sm:h-96 w-full z-0"></div>
 
-            <!-- Tombol Floating Pusatkan Peta Langsung di Atas Peta -->
-            <button
-                type="button"
-                class="absolute bottom-3 right-3 z-[400] inline-flex items-center gap-1.5 rounded-xl border border-[#0d685b]/60 bg-[#131d1a]/95 backdrop-blur px-3 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-xl hover:bg-[#1c2a25] active:scale-95 transition cursor-pointer"
-                title="Pusatkan tampilan peta ke seluruh rute"
-                @click="centerMap"
-            >
-                <span>🎯</span>
-                <span>Pusatkan Peta</span>
-            </button>
+            <!-- Tombol Floating di Sudut Bawah Peta -->
+            <div class="absolute bottom-3 right-3 z-[400] flex items-center gap-2">
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-[#0d685b]/60 bg-[#131d1a]/95 backdrop-blur px-3 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-xl hover:bg-[#1c2a25] active:scale-95 transition cursor-pointer"
+                    title="Perbarui peta & rute"
+                    :disabled="isRefreshing"
+                    @click="refreshMap"
+                >
+                    <span :class="{ 'animate-spin': isRefreshing }">🔄</span>
+                    <span>Perbarui</span>
+                </button>
+                <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-[#0d685b]/60 bg-[#131d1a]/95 backdrop-blur px-3 py-1.5 text-xs font-bold text-[#f3f2e7] shadow-xl hover:bg-[#1c2a25] active:scale-95 transition cursor-pointer"
+                    title="Pusatkan tampilan peta ke seluruh rute"
+                    @click="centerMap"
+                >
+                    <span>🎯</span>
+                    <span>Pusatkan Peta</span>
+                </button>
+            </div>
         </div>
 
         <!-- FOOTER LEGENDA GARIS RUTE JALAN -->
@@ -710,7 +754,7 @@ onUnmounted(() => {
         >
             <div class="flex flex-wrap items-center gap-3 sm:gap-4">
                 <span class="flex items-center gap-1.5 font-medium">
-                    <img src="/images/store-ramela.svg" class="w-4 h-4 rounded-full border border-emerald-400 object-cover" alt="Toko Ramela" />
+                    <span class="text-sm">🏪</span>
                     <span class="text-[#f3f2e7]">Toko: {{ storeName || 'Toko RAMELA' }} (Awal Rute)</span>
                 </span>
                 <span class="flex items-center gap-1.5 font-medium">
