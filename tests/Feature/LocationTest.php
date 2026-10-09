@@ -87,15 +87,22 @@ test('reverse geocode otomatis fallback ke openstreetmap saat google api key kos
         ->and($res['postal_code'])->toBe('50132');
 });
 
-test('pencarian alamat mengembalikan daftar lokasi', function () {
+test('pencarian alamat mengembalikan daftar lokasi dengan kecamatan dan kode pos', function () {
     $user = User::factory()->create();
 
     Http::fake([
         'https://nominatim.openstreetmap.org/search*' => Http::response([
             [
-                'display_name' => 'Jalan Pandanaran, Mugassari, Semarang Selatan, Kota Semarang, Indonesia',
+                'display_name' => 'Jalan Pandanaran, Mugassari, Semarang Selatan, Kota Semarang, 50241, Indonesia',
                 'lat' => '-6.989720',
                 'lon' => '110.421930',
+                'address' => [
+                    'road' => 'Jalan Pandanaran',
+                    'suburb' => 'Mugassari',
+                    'city_district' => 'Semarang Selatan',
+                    'city' => 'Kota Semarang',
+                    'postcode' => '50241',
+                ],
             ],
         ], 200),
     ]);
@@ -108,5 +115,9 @@ test('pencarian alamat mengembalikan daftar lokasi', function () {
     expect($res['success'])->toBeTrue()
         ->and(count($res['results']))->toBeGreaterThanOrEqual(1)
         ->and($res['results'][0]['latitude'])->toBe(-6.98972)
-        ->and($res['results'][0]['longitude'])->toBe(110.42193);
+        ->and($res['results'][0]['longitude'])->toBe(110.42193)
+        ->and($res['results'][0]['street_name'])->toBe('Jalan Pandanaran')
+        ->and($res['results'][0]['district'])->toBe('Kec. Semarang Selatan, Kel. Mugassari')
+        ->and($res['results'][0]['postal_code'])->toBe('50241');
 });
+

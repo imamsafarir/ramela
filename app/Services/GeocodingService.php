@@ -67,6 +67,164 @@ class GeocodingService
     }
 
     /**
+     * Parse komponen alamat dari Google Geocoding API
+     */
+    protected function parseGoogleAddressComponents(array $components, string $formatted, float $lat, float $lng): array
+    {
+        $streetNumber = null;
+        $route = null;
+        $sublocality = null; // Kelurahan / Desa
+        $district = null;    // Kecamatan
+        $city = null;        // Kota / Kabupaten
+        $province = null;
+        $postalCode = null;
+
+        foreach ($components as $comp) {
+            $types = $comp['types'] ?? [];
+            if (in_array('street_number', $types)) {
+                $streetNumber = $comp['long_name'];
+            }
+            if (in_array('route', $types)) {
+                $route = $comp['long_name'];
+            }
+            if (in_array('sublocality_level_1', $types) || in_array('sublocality', $types) || in_array('administrative_area_level_4', $types)) {
+                $sublocality = $sublocality ?: $comp['long_name'];
+            }
+            if (in_array('administrative_area_level_3', $types)) {
+                $district = $district ?: $comp['long_name'];
+            }
+            if (in_array('administrative_area_level_2', $types)) {
+                $city = $city ?: $comp['long_name'];
+            }
+            if (in_array('administrative_area_level_1', $types)) {
+                $province = $comp['long_name'];
+            }
+            if (in_array('postal_code', $types)) {
+                $postalCode = $comp['long_name'];
+            }
+        }
+
+        // Susun nama jalan
+        $streetName = $route;
+        if ($route && $streetNumber) {
+            $streetName = "{$route} No. {$streetNumber}";
+        }
+
+        $formattedClean = preg_replace('/, Indonesia$/i', '', $formatted);
+
+        // Format kecamatan & kelurahan
+        $districtFormatted = '';
+        if ($district && $sublocality) {
+            $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+            $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+            $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
+        } elseif ($district) {
+            $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+            $districtFormatted = "Kec. {$dName}";
+        } elseif ($sublocality) {
+            $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
+            $districtFormatted = "Kel. {$sName}";
+        }
+
+        return [
+            'success' => true,
+            'source' => 'google',
+            'street_name' => $streetName ?: $formattedClean,
+            'formatted_address' => $formattedClean,
+            'district' => $districtFormatted,
+            'sublocality' => $sublocality ?? '',
+            'city' => $city ?? '',
+            'province' => $province ?? '',
+            'postal_code' => $postalCode ?? '',
+            'latitude' => $lat,
+            'longitude' => $lng,
+        ];
+    }
+
+    /**
+     * Parse komponen alamat dari OpenStreetMap Nominatim
+     */
+    protected function parseNominatimAddress(array $addr, string $displayName, float $lat, float $lng): array
+    {
+        $road = $addr['road']
+            ?? $addr['pedestrian']
+            ?? $addr['footway']
+            ?? $addr['residential']
+            ?? $addr['neighbourhood']
+            ?? $addr['suburb']
+            ?? null;
+
+        $houseNumber = $addr['house_number'] ?? null;
+
+        $streetName = $road;
+        if ($road && $houseNumber) {
+            $streetName = "{$road} No. {$houseNumber}";
+        }
+
+        $suburb = $addr['suburb']
+            ?? $addr['village']
+            ?? $addr['hamlet']
+            ?? $addr['neighbourhood']
+            ?? $addr['quarter']
+            ?? '';
+
+        $district = $addr['subdistrict']
+            ?? $addr['city_district']
+            ?? $addr['district']
+            ?? $addr['county']
+            ?? $addr['municipality']
+            ?? '';
+
+        $city = $addr['city']
+            ?? $addr['town']
+            ?? $addr['regency']
+            ?? $addr['state_district']
+            ?? '';
+
+        $province = $addr['state'] ?? '';
+        $postcode = $addr['postcode'] ?? '';
+
+        // Ekstrak kode pos 5 digit dari display_name jika belum terisi di address
+        if (empty($postcode) && preg_match('/\b(\d{5})\b/', $displayName, $matches)) {
+            $postcode = $matches[1];
+        }
+
+        $districtFormatted = '';
+        if ($district && $suburb) {
+            $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+            $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
+            $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
+        } elseif ($district) {
+            $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
+            $districtFormatted = "Kec. {$dName}";
+        } elseif ($suburb) {
+            $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
+            $districtFormatted = "Kel. {$sName}";
+        }
+
+        $cleanDisplayName = preg_replace('/, Indonesia$/i', '', $displayName);
+
+        // Susun alamat rapi
+        $parts = array_filter([$streetName, $suburb, $district, $city, $province, $postcode]);
+        $cleanFormatted = !empty($parts) ? implode(', ', $parts) : $cleanDisplayName;
+        $cleanFormatted = preg_replace('/, Indonesia$/i', '', $cleanFormatted);
+
+        return [
+            'success' => true,
+            'source' => 'osm',
+            'street_name' => $streetName ?: ($cleanFormatted ?: "Titik ({$lat}, {$lng})"),
+            'formatted_address' => $cleanFormatted ?: "Koordinat {$lat}, {$lng}",
+            'district' => $districtFormatted,
+            'sublocality' => $suburb,
+            'city' => $city,
+            'province' => $province,
+            'postal_code' => $postcode,
+            'latitude' => $lat,
+            'longitude' => $lng,
+        ];
+    }
+
+    /**
      * Ambil nama jalan & detail alamat dari Google Maps Geocoding API
      */
     protected function reverseFromGoogle(float $lat, float $lng, string $apiKey): ?array
@@ -90,78 +248,12 @@ class GeocodingService
             }
 
             $first = $data['results'][0];
-            $components = $first['address_components'] ?? [];
-
-            $streetNumber = null;
-            $route = null;
-            $sublocality = null; // Kelurahan / Desa
-            $district = null;    // Kecamatan
-            $city = null;        // Kota / Kabupaten
-            $province = null;
-            $postalCode = null;
-
-            foreach ($components as $comp) {
-                $types = $comp['types'] ?? [];
-                if (in_array('street_number', $types)) {
-                    $streetNumber = $comp['long_name'];
-                }
-                if (in_array('route', $types)) {
-                    $route = $comp['long_name'];
-                }
-                if (in_array('sublocality_level_1', $types) || in_array('sublocality', $types) || in_array('administrative_area_level_4', $types)) {
-                    $sublocality = $sublocality ?: $comp['long_name'];
-                }
-                if (in_array('administrative_area_level_3', $types) || in_array('locality', $types)) {
-                    $district = $district ?: $comp['long_name'];
-                }
-                if (in_array('administrative_area_level_2', $types)) {
-                    $city = $city ?: $comp['long_name'];
-                }
-                if (in_array('administrative_area_level_1', $types)) {
-                    $province = $comp['long_name'];
-                }
-                if (in_array('postal_code', $types)) {
-                    $postalCode = $comp['long_name'];
-                }
-            }
-
-            // Susun nama jalan
-            $streetName = $route;
-            if ($route && $streetNumber) {
-                $streetName = "{$route} No. {$streetNumber}";
-            }
-
-            $formatted = $first['formatted_address'] ?? '';
-            // Bersihkan akhiran ", Indonesia" jika ada untuk ringkas
-            $formattedClean = preg_replace('/, Indonesia$/i', '', $formatted);
-
-            // Format kecamatan & kelurahan
-            $districtFormatted = '';
-            if ($district && $sublocality) {
-                $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
-                $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
-                $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
-            } elseif ($district) {
-                $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
-                $districtFormatted = "Kec. {$dName}";
-            } elseif ($sublocality) {
-                $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $sublocality);
-                $districtFormatted = "Kel. {$sName}";
-            }
-
-            return [
-                'success' => true,
-                'source' => 'google',
-                'street_name' => $streetName ?: $formattedClean,
-                'formatted_address' => $formattedClean,
-                'district' => $districtFormatted,
-                'sublocality' => $sublocality ?? '',
-                'city' => $city ?? '',
-                'province' => $province ?? '',
-                'postal_code' => $postalCode ?? '',
-                'latitude' => $lat,
-                'longitude' => $lng,
-            ];
+            return $this->parseGoogleAddressComponents(
+                $first['address_components'] ?? [],
+                $first['formatted_address'] ?? '',
+                $lat,
+                $lng
+            );
         } catch (\Throwable $e) {
             Log::warning('Google Geocoding exception: ' . $e->getMessage());
             return null;
@@ -192,65 +284,12 @@ class GeocodingService
 
                 if ($response->successful()) {
                     $data = $response->json();
-                    $addr = $data['address'] ?? [];
-
-                    $road = $addr['road']
-                        ?? $addr['pedestrian']
-                        ?? $addr['footway']
-                        ?? $addr['residential']
-                        ?? $addr['neighbourhood']
-                        ?? $addr['suburb']
-                        ?? null;
-
-                    $houseNumber = $addr['house_number'] ?? null;
-
-                    $streetName = $road;
-                    if ($road && $houseNumber) {
-                        $streetName = "{$road} No. {$houseNumber}";
-                    }
-
-                    $suburb = $addr['suburb'] ?? $addr['village'] ?? $addr['hamlet'] ?? $addr['neighbourhood'] ?? $addr['quarter'] ?? '';
-                    $district = $addr['city_district'] ?? $addr['district'] ?? $addr['county'] ?? $addr['municipality'] ?? '';
-                    $city = $addr['city'] ?? $addr['town'] ?? $addr['state_district'] ?? '';
-                    $province = $addr['state'] ?? '';
-                    $postcode = $addr['postcode'] ?? '';
-
-                    // Ekstrak kode pos 5 digit dari display_name jika belum terisi di address
-                    if (empty($postcode) && preg_match('/\b(\d{5})\b/', $data['display_name'] ?? '', $matches)) {
-                        $postcode = $matches[1];
-                    }
-
-                    $districtFormatted = '';
-                    if ($district && $suburb) {
-                        $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
-                        $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
-                        $districtFormatted = "Kec. {$dName}, Kel. {$sName}";
-                    } elseif ($district) {
-                        $dName = preg_replace('/^(Kecamatan|Kec\.)\s*/i', '', $district);
-                        $districtFormatted = "Kec. {$dName}";
-                    } elseif ($suburb) {
-                        $sName = preg_replace('/^(Kelurahan|Kel\.|Desa)\s*/i', '', $suburb);
-                        $districtFormatted = "Kel. {$sName}";
-                    }
-
-                    // Format alamat rapi
-                    $parts = array_filter([$streetName, $suburb, $district, $city, $province, $postcode]);
-                    $cleanFormatted = !empty($parts) ? implode(', ', $parts) : ($data['display_name'] ?? '');
-                    $cleanFormatted = preg_replace('/, Indonesia$/i', '', $cleanFormatted);
-
-                    return [
-                        'success' => true,
-                        'source' => 'osm',
-                        'street_name' => $streetName ?: ($cleanFormatted ?: "Titik ({$lat}, {$lng})"),
-                        'formatted_address' => $cleanFormatted ?: "Koordinat {$lat}, {$lng}",
-                        'district' => $districtFormatted,
-                        'sublocality' => $suburb,
-                        'city' => $city,
-                        'province' => $province,
-                        'postal_code' => $postcode,
-                        'latitude' => $lat,
-                        'longitude' => $lng,
-                    ];
+                    return $this->parseNominatimAddress(
+                        $data['address'] ?? [],
+                        $data['display_name'] ?? '',
+                        $lat,
+                        $lng
+                    );
                 }
             } catch (\Throwable $e) {
                 Log::warning('Nominatim reverse exception: ' . $e->getMessage());
@@ -291,12 +330,27 @@ class GeocodingService
                     $results = [];
                     foreach (array_slice($data['results'], 0, 5) as $res) {
                         $loc = $res['geometry']['location'] ?? [];
-                        $cleanAddr = preg_replace('/, Indonesia$/i', '', $res['formatted_address'] ?? '');
+                        $lat = (float) ($loc['lat'] ?? 0);
+                        $lng = (float) ($loc['lng'] ?? 0);
+                        $parsed = $this->parseGoogleAddressComponents(
+                            $res['address_components'] ?? [],
+                            $res['formatted_address'] ?? '',
+                            $lat,
+                            $lng
+                        );
+                        $cleanAddr = $parsed['formatted_address'];
+
                         $results[] = [
                             'title' => explode(',', $cleanAddr)[0] ?? $cleanAddr,
                             'address' => $cleanAddr,
-                            'latitude' => (float) ($loc['lat'] ?? 0),
-                            'longitude' => (float) ($loc['lng'] ?? 0),
+                            'street_name' => $parsed['street_name'],
+                            'district' => $parsed['district'],
+                            'sublocality' => $parsed['sublocality'],
+                            'city' => $parsed['city'],
+                            'province' => $parsed['province'],
+                            'postal_code' => $parsed['postal_code'],
+                            'latitude' => $lat,
+                            'longitude' => $lng,
                             'source' => 'google',
                         ];
                     }
@@ -333,12 +387,29 @@ class GeocodingService
                 $data = $response->json();
                 $results = [];
                 foreach ($data as $item) {
+                    $lat = (float) ($item['lat'] ?? 0);
+                    $lng = (float) ($item['lon'] ?? 0);
+                    $parsed = $this->parseNominatimAddress(
+                        $item['address'] ?? [],
+                        $item['display_name'] ?? '',
+                        $lat,
+                        $lng
+                    );
+
                     $cleanName = preg_replace('/, Indonesia$/i', '', $item['display_name'] ?? '');
+                    $title = $item['name'] ?? (explode(',', $cleanName)[0] ?? $cleanName);
+
                     $results[] = [
-                        'title' => explode(',', $cleanName)[0] ?? $cleanName,
-                        'address' => $cleanName,
-                        'latitude' => (float) $item['lat'],
-                        'longitude' => (float) $item['lon'],
+                        'title' => $title,
+                        'address' => $parsed['formatted_address'] ?: $cleanName,
+                        'street_name' => $parsed['street_name'],
+                        'district' => $parsed['district'],
+                        'sublocality' => $parsed['sublocality'],
+                        'city' => $parsed['city'],
+                        'province' => $parsed['province'],
+                        'postal_code' => $parsed['postal_code'],
+                        'latitude' => $lat,
+                        'longitude' => $lng,
                         'source' => 'osm',
                     ];
                 }

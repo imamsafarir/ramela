@@ -83,16 +83,30 @@ const defaultStoreCenter = computed(() => {
 });
 
 const onLocationSelected = (data) => {
-    form.shipping_latitude = data.latitude;
-    form.shipping_longitude = data.longitude;
-    if (data.formatted_address || data.street_name) {
-        form.shipping_address = data.formatted_address || data.street_name;
+    if (data.latitude && data.longitude) {
+        form.shipping_latitude = Number(data.latitude);
+        form.shipping_longitude = Number(data.longitude);
+    }
+    if (data.formatted_address || data.street_name || data.address) {
+        form.shipping_address = data.formatted_address || data.address || data.street_name;
     }
     if (data.district) {
         form.shipping_district = data.district;
     }
     if (data.postal_code) {
         form.shipping_postal_code = data.postal_code;
+    }
+
+    // Otomatis pilih tarif Kabupaten / Kota jika cocok dengan nama kota dari hasil geocoding
+    if (data.city && props.shippingRates?.length) {
+        const cleanCity = data.city.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s*/i, '').trim();
+        const matched = props.shippingRates.find((r) => {
+            const rCity = r.city_name.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s*/i, '').trim();
+            return rCity.includes(cleanCity) || cleanCity.includes(rCity);
+        });
+        if (matched) {
+            form.shipping_rate_id = matched.id;
+        }
     }
 };
 
@@ -244,34 +258,7 @@ const input =
                     </p>
                 </div>
 
-                <!-- Baris Kecamatan/Kelurahan & Kode Pos -->
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <div class="sm:col-span-2">
-                        <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80">Kecamatan / Kelurahan (Kec/Kel)</label>
-                        <input
-                            v-model="form.shipping_district"
-                            :class="input"
-                            placeholder="Contoh: Kec. Tarakan Barat, Kel. Karang Anyar"
-                        />
-                        <p v-if="form.errors.shipping_district" class="mt-1 text-xs text-rose-400 font-semibold">
-                            {{ form.errors.shipping_district }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <label class="mb-1.5 block text-xs font-bold text-[#f3f2e7]/80">Kode Pos</label>
-                        <input
-                            v-model="form.shipping_postal_code"
-                            :class="input"
-                            placeholder="Contoh: 77111"
-                        />
-                        <p v-if="form.errors.shipping_postal_code" class="mt-1 text-xs text-rose-400 font-semibold">
-                            {{ form.errors.shipping_postal_code }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- PETA INTERAKTIF OPENSTREETMAP & AMBIL NAMA JALAN GOOGLE -->
+                <!-- PETA INTERAKTIF OPENSTREETMAP & PENCARIAN ALAMAT / GPS -->
                 <div>
                     <LocationPicker
                         v-model:latitude="form.shipping_latitude"
@@ -280,12 +267,53 @@ const input =
                         v-model:district="form.shipping_district"
                         v-model:postalCode="form.shipping_postal_code"
                         :default-center="defaultStoreCenter"
-                        label="Pin Titik Lokasi Penerima (OpenStreetMap)"
+                        label="Titik Lokasi Pengiriman & Cari Alamat"
                         @location-selected="onLocationSelected"
                     />
                     <p v-if="form.errors.shipping_latitude || form.errors.shipping_longitude" class="mt-1 text-xs text-rose-400 font-semibold">
                         {{ form.errors.shipping_latitude || form.errors.shipping_longitude }}
                     </p>
+                </div>
+
+                <!-- Baris Kecamatan/Kelurahan & Kode Pos (Terisi Otomatis) -->
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="sm:col-span-2">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-[#f3f2e7]/80">
+                                Kecamatan / Kelurahan (Kec/Kel)
+                            </label>
+                            <span v-if="form.shipping_district" class="text-[10px] text-emerald-400 font-semibold">
+                                ✨ Terisi otomatis
+                            </span>
+                        </div>
+                        <input
+                            v-model="form.shipping_district"
+                            :class="input"
+                            placeholder="Contoh: Kec. Semarang Selatan, Kel. Mugassari"
+                        />
+                        <p v-if="form.errors.shipping_district" class="mt-1 text-xs text-rose-400 font-semibold">
+                            {{ form.errors.shipping_district }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-[#f3f2e7]/80">
+                                Kode Pos
+                            </label>
+                            <span v-if="form.shipping_postal_code" class="text-[10px] text-emerald-400 font-semibold">
+                                ✨ Terisi otomatis
+                            </span>
+                        </div>
+                        <input
+                            v-model="form.shipping_postal_code"
+                            :class="input"
+                            placeholder="Contoh: 50241"
+                        />
+                        <p v-if="form.errors.shipping_postal_code" class="mt-1 text-xs text-rose-400 font-semibold">
+                            {{ form.errors.shipping_postal_code }}
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Detail Alamat Lengkap -->
@@ -294,7 +322,10 @@ const input =
                         <label class="block text-xs font-bold text-[#f3f2e7]/80">
                             Detail Alamat Lengkap (Nama Jalan, No. Rumah, Patokan)
                         </label>
-                        <span class="text-[10px] text-[#f3f2e7]/50">
+                        <span v-if="form.shipping_address" class="text-[10px] text-emerald-400 font-semibold">
+                            ✨ Terisi otomatis & dapat disesuaikan
+                        </span>
+                        <span v-else class="text-[10px] text-[#f3f2e7]/50">
                             Terisi otomatis dari pin lokasi & dapat diedit
                         </span>
                     </div>

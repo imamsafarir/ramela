@@ -40,6 +40,7 @@ const emit = defineEmits([
     "update:address",
     "update:district",
     "update:postalCode",
+    "update:postal-code",
     "locationSelected",
 ]);
 
@@ -88,6 +89,27 @@ const createPinIcon = () =>
         iconSize: [36, 42],
         iconAnchor: [18, 41],
     });
+
+// Helper emit semua data lokasi ke komponen induk
+const applyLocationData = (data) => {
+    lastResolved.value = data;
+
+    if (data.latitude && data.longitude) {
+        emit("update:latitude", Number(data.latitude));
+        emit("update:longitude", Number(data.longitude));
+    }
+    if (data.formatted_address || data.street_name || data.address) {
+        emit("update:address", data.formatted_address || data.address || data.street_name);
+    }
+    if (data.district) {
+        emit("update:district", data.district);
+    }
+    if (data.postal_code) {
+        emit("update:postalCode", data.postal_code);
+        emit("update:postal-code", data.postal_code);
+    }
+    emit("locationSelected", data);
+};
 
 // Inisialisasi Peta Leaflet (OpenStreetMap)
 const initMap = () => {
@@ -159,7 +181,7 @@ const fetchStreetName = async (lat, lng) => {
         });
 
         if (res.data && res.data.success) {
-            lastResolved.value = res.data;
+            applyLocationData(res.data);
 
             // Update popup pada marker
             if (marker) {
@@ -175,20 +197,6 @@ const fetchStreetName = async (lat, lng) => {
                     </div>
                 `).openPopup();
             }
-
-            // Emit event lokasi lengkap
-            emit("locationSelected", res.data);
-
-            // Auto-fill form fields
-            if (res.data.street_name) {
-                emit("update:address", res.data.formatted_address || res.data.street_name);
-            }
-            if (res.data.district) {
-                emit("update:district", res.data.district);
-            }
-            if (res.data.postal_code) {
-                emit("update:postalCode", res.data.postal_code);
-            }
         }
     } catch (err) {
         console.warn("Gagal mengambil nama jalan:", err);
@@ -201,71 +209,122 @@ const fetchStreetName = async (lat, lng) => {
 // Ambil Lokasi GPS Perangkat Pengguna
 const detectGps = () => {
     if (!navigator.geolocation) {
-        alert("Browser perangkat Anda tidak mendukung fitur Geolocation.");
+        geocodeError.value = "Browser perangkat Anda tidak mendukung fitur Geolocation GPS.";
         return;
     }
 
     isGpsLoading.value = true;
     geocodeError.value = "";
 
-    navigator.geolocation.getCurrentPosition(
-        (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            isGpsLoading.value = false;
+    const onSuccess = (pos) => {
+        const lat = Number(Number(pos.coords.latitude).toFixed(6));
+        const lng = Number(Number(pos.coords.longitude).toFixed(6));
+        isGpsLoading.value = false;
 
-            if (map) {
-                map.setView([lat, lng], 17);
-            }
-            setMarkerPosition(lat, lng, true);
-        },
-        (err) => {
-            isGpsLoading.value = false;
-            let msg = "Gagal mendeteksi GPS.";
-            if (err.code === 1) msg = "Izin akses lokasi ditolak. Silakan izinkan browser mengakses GPS.";
-            if (err.code === 2) msg = "Posisi GPS tidak ditemukan. Pastikan GPS aktif.";
-            if (err.code === 3) msg = "Waktu pencarian GPS habis.";
-            alert(msg);
-        },
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        if (map) {
+            map.setView([lat, lng], 17);
+        }
+        setMarkerPosition(lat, lng, true);
+    };
+
+    const handleGpsError = (err) => {
+        let msg = "Gagal mendeteksi lokasi GPS.";
+        if (err.code === 1) msg = "Izin akses lokasi ditolak. Silakan izinkan browser mengakses GPS perangkat.";
+        if (err.code === 2) msg = "Posisi GPS tidak ditemukan. Pastikan layanan GPS di perangkat aktif.";
+        if (err.code === 3) msg = "Waktu pencarian GPS habis. Silakan klik peta atau gunakan pencarian alamat.";
+        geocodeError.value = msg;
+    };
+
+    const onError = (err) => {
+        // Jika high accuracy gagal/timeout, coba fallback mode standar
+        if (err.code === 3) {
+            navigator.geolocation.getCurrentPosition(
+                onSuccess,
+                (err2) => {
+                    isGpsLoading.value = false;
+                    handleGpsError(err2);
+                },
+                { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+            );
+            return;
+        }
+        isGpsLoading.value = false;
+        handleGpsError(err);
+    };
+
+    navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        onError,
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
 };
 
-// Pencarian Alamat / Nama Jalan
-const handleSearchInput = () => {
-    if (searchTimeout) clearTimeout(searchTimeout);
-
+// Eksekusi Pencarian Alamat / Nama Jalan
+const executeSearch = async () => {
     const q = searchQuery.value.trim();
-    if (q.length < 3) {
+    if (q.length < 2) {
         searchResults.value = [];
         showSearchResults.value = false;
         return;
     }
 
-    searchTimeout = setTimeout(async () => {
-        isSearching.value = true;
-        try {
-            const res = await axios.get("/api/location/search", { params: { q } });
-            if (res.data && res.data.results) {
-                searchResults.value = res.data.results;
-                showSearchResults.value = res.data.results.length > 0;
-            }
-        } catch (e) {
-            console.warn("Gagal mencari alamat:", e);
-        } finally {
-            isSearching.value = false;
+    isSearching.value = true;
+    try {
+        const res = await axios.get("/api/location/search", { params: { q } });
+        if (res.data && res.data.results) {
+            searchResults.value = res.data.results;
+            showSearchResults.value = res.data.results.length > 0;
         }
-    }, 400);
+    } catch (e) {
+        console.warn("Gagal mencari alamat:", e);
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+const handleSearchInput = () => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    const q = searchQuery.value.trim();
+    if (q.length < 2) {
+        searchResults.value = [];
+        showSearchResults.value = false;
+        return;
+    }
+
+    searchTimeout = setTimeout(executeSearch, 300);
+};
+
+const searchImmediately = () => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    executeSearch();
 };
 
 const selectSearchResult = (item) => {
-    searchQuery.value = item.title || item.address;
+    searchQuery.value = item.street_name || item.title || item.address;
     showSearchResults.value = false;
+
+    // Langsung terapkan data lokasi hasil pencarian seketika tanpa delay reverse geocode!
+    applyLocationData(item);
 
     if (map) {
         map.setView([item.latitude, item.longitude], 17);
     }
-    setMarkerPosition(item.latitude, item.longitude, true);
+    // Update marker tanpa reverse geocoding tambahan
+    setMarkerPosition(item.latitude, item.longitude, false);
+
+    if (marker) {
+        const sourceBadge = item.source === "google"
+            ? "<span style='color:#3b82f6; font-weight:700;'>Google Maps</span>"
+            : "<span style='color:#10b981; font-weight:700;'>OpenStreetMap</span>";
+
+        marker.bindPopup(`
+            <div style="font-size: 11px; line-height: 1.4; color: #1f2937;">
+                <b style="color: #065f46;">${item.street_name || item.title || 'Titik Terpilih'}</b><br/>
+                <span style="font-size: 10px; color: #4b5563;">${item.address || ''}</span><br/>
+                <span style="font-size: 9px; color: #9ca3af;">Sumber: ${sourceBadge}</span>
+            </div>
+        `).openPopup();
+    }
 };
 
 // Sinkronkan marker jika koordinat luar berubah
@@ -315,7 +374,7 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
                 <p class="text-[11px] text-[#f3f2e7]/60">
-                    Klik peta atau geser pin 📍 untuk menetapkan titik akurat. Nama jalan terdeteksi otomatis.
+                    Cari jalan atau klik GPS untuk mengisi otomatis Kecamatan, Kelurahan, Kode Pos & Alamat.
                 </p>
             </div>
 
@@ -323,13 +382,31 @@ onBeforeUnmount(() => {
             <button
                 type="button"
                 :disabled="isGpsLoading"
-                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 active:scale-95 transition disabled:opacity-50 cursor-pointer"
+                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 active:scale-95 transition disabled:opacity-50 cursor-pointer shadow-xs"
                 title="Gunakan posisi GPS saat ini dari perangkat"
                 @click="detectGps"
             >
                 <span v-if="isGpsLoading" class="animate-spin text-xs">⏳</span>
                 <span v-else>📍</span>
                 <span>{{ isGpsLoading ? 'Mencari GPS...' : 'Gunakan GPS Saya' }}</span>
+            </button>
+        </div>
+
+        <!-- NOTIFIKASI ERROR JIKA ADA -->
+        <div
+            v-if="geocodeError"
+            class="flex items-center justify-between gap-2 rounded-xl border border-rose-500/30 bg-rose-950/40 p-2.5 text-xs text-rose-300"
+        >
+            <div class="flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>{{ geocodeError }}</span>
+            </div>
+            <button
+                type="button"
+                class="text-rose-300 hover:text-white text-xs px-1"
+                @click="geocodeError = ''"
+            >
+                ✕
             </button>
         </div>
 
@@ -340,22 +417,25 @@ onBeforeUnmount(() => {
                 <input
                     v-model="searchQuery"
                     type="text"
-                    class="w-full rounded-xl border border-[#0d685b]/40 bg-[#1c2a25] pl-8 pr-8 py-2 text-xs text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
-                    placeholder="Cari nama jalan, perumahan, kelurahan..."
+                    class="w-full rounded-xl border border-[#0d685b]/40 bg-[#1c2a25] pl-8 pr-16 py-2 text-xs text-[#f3f2e7] placeholder:text-[#f3f2e7]/40 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    placeholder="Ketik nama jalan, perumahan, kelurahan... (Tekan Enter)"
                     @input="handleSearchInput"
+                    @keydown.enter.prevent="searchImmediately"
                     @focus="showSearchResults = searchResults.length > 0"
                 />
-                <span v-if="isSearching" class="absolute right-3 animate-spin text-xs text-emerald-400">
-                    ⏳
-                </span>
-                <button
-                    v-else-if="searchQuery"
-                    type="button"
-                    class="absolute right-3 text-xs text-[#f3f2e7]/50 hover:text-[#f3f2e7]"
-                    @click="searchQuery = ''; showSearchResults = false;"
-                >
-                    ✕
-                </button>
+                <div class="absolute right-3 flex items-center gap-1.5">
+                    <span v-if="isSearching" class="animate-spin text-xs text-emerald-400">
+                        ⏳
+                    </span>
+                    <button
+                        v-if="searchQuery"
+                        type="button"
+                        class="text-xs text-[#f3f2e7]/50 hover:text-[#f3f2e7]"
+                        @click="searchQuery = ''; showSearchResults = false;"
+                    >
+                        ✕
+                    </button>
+                </div>
             </div>
 
             <!-- DROPDOWN HASIL PENCARIAN -->
@@ -373,8 +453,11 @@ onBeforeUnmount(() => {
                     <div class="flex-1 min-w-0">
                         <div class="font-bold text-[#f3f2e7] truncate">{{ item.title }}</div>
                         <div class="text-[10px] text-[#f3f2e7]/60 truncate">{{ item.address }}</div>
+                        <div v-if="item.district" class="mt-0.5 text-[9px] text-emerald-400 font-semibold truncate">
+                            ✨ {{ item.district }} <span v-if="item.postal_code">· Kode Pos {{ item.postal_code }}</span>
+                        </div>
                     </div>
-                    <span class="rounded bg-emerald-500/20 px-1 py-0.5 text-[9px] font-semibold text-emerald-300">
+                    <span class="rounded bg-emerald-500/20 px-1 py-0.5 text-[9px] font-semibold text-emerald-300 shrink-0">
                         {{ item.source === 'google' ? 'Google' : 'OSM' }}
                     </span>
                 </div>
@@ -394,7 +477,7 @@ onBeforeUnmount(() => {
                 class="absolute bottom-2 left-2 z-20 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur px-3 py-1.5 text-xs text-emerald-300 border border-emerald-500/30 shadow-lg"
             >
                 <span class="animate-spin text-xs">🔄</span>
-                <span>Mendeteksi nama jalan...</span>
+                <span>Mendeteksi nama jalan & wilayah...</span>
             </div>
         </div>
 
@@ -422,13 +505,17 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <p v-if="lastResolved?.formatted_address" class="text-[11px] text-[#f3f2e7]/80 leading-relaxed">
-                {{ lastResolved.formatted_address }}
+            <p v-if="lastResolved?.formatted_address || lastResolved?.address" class="text-[11px] text-[#f3f2e7]/80 leading-relaxed">
+                {{ lastResolved?.formatted_address || lastResolved?.address }}
             </p>
 
             <div v-if="lastResolved?.district || lastResolved?.postal_code" class="flex items-center gap-2 text-[10px] text-[#f3f2e7]/60 flex-wrap">
-                <span v-if="lastResolved?.district">Kec/Kel: <strong>{{ lastResolved.district }}</strong></span>
-                <span v-if="lastResolved?.postal_code">Kode Pos: <strong>{{ lastResolved.postal_code }}</strong></span>
+                <span v-if="lastResolved?.district" class="text-emerald-300 font-semibold">
+                    Kec/Kel: <strong>{{ lastResolved.district }}</strong>
+                </span>
+                <span v-if="lastResolved?.postal_code" class="text-emerald-300 font-semibold">
+                    Kode Pos: <strong>{{ lastResolved.postal_code }}</strong>
+                </span>
             </div>
         </div>
 
@@ -436,7 +523,7 @@ onBeforeUnmount(() => {
             v-else
             class="rounded-xl border border-[#0d685b]/30 bg-[#1c2a25]/50 p-2.5 text-center text-[11px] text-[#f3f2e7]/60"
         >
-            ⚠️ Belum ada titik koordinat yang dipilih. Klik tombol <strong>"Gunakan GPS Saya"</strong> atau klik langsung pada peta di atas.
+            ⚠️ Belum ada titik koordinat yang dipilih. Klik tombol <strong>"Gunakan GPS Saya"</strong> atau cari nama jalan di kolom pencarian.
         </div>
     </div>
 </template>
